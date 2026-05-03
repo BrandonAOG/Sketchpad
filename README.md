@@ -1,202 +1,177 @@
-# AOG Drawing Pad
+# AOG Drawing Pad — GitHub README
 
-A professional, iPad-optimized drawing application designed for site documentation and technical sketches. Built with vanilla JavaScript and Canvas API.
+```markdown
+# ✏️ Always On Generators — Site Drawing Pad
 
-## Features
+![AOG Logo](https://raw.githubusercontent.com/BrandonAOG/AOG-Logo/main/logo.png)
 
-### Drawing Tools
-- **Pen** - Freehand drawing with smooth curves
-- **Line** - Straight lines with snapping support
-- **Arrow** - Directional lines with arrowheads
-- **Rectangle** - Customizable rectangles with fill options
-- **Circle** - Ellipses and circles
-- **Text** - Multi-line text with custom fonts and sizes
-- **Measure** - Distance measurement tool with unit conversion
-- **Eraser** - Remove drawn elements
-
-### Advanced Features
-- **Symbol Library** - Electrical, gas, and site symbols (generators, transfer switches, propane tanks, etc.)
-- **Color Picker** - Full color selection for stroke and fill
-- **Stroke Width Control** - Three preset widths (thin, normal, thick)
-- **Grid & Snap** - Optional grid display with snap-to-grid drawing
-- **Zoom & Pan** - Mouse wheel zoom and middle-button panning
-- **Undo/Redo** - Full drawing history (50-level stack)
-- **Object Selection** - Select, move, duplicate, copy/paste objects
-- **Layer Control** - Bring to front/send to back
-- **Opacity Control** - Adjust transparency for all drawing elements
-
-### Export Options
-- **PNG Export** - High-resolution raster image
-- **PDF Export** - Print-friendly document format
-
-### Mobile Features
-- **iPad Optimized** - Touch-friendly interface with multi-touch support
-- **Pinch to Zoom** - Two-finger pinch zoom gesture
-- **Two-Finger Pan** - Multi-touch panning
-- **Long-Press Menu** - Context menu for object operations
-- **Auto-Save** - Automatic saving every 10 seconds
-- **Safe Area Support** - Notch-safe layout for modern devices
-
-### UI Features
-- **Dark/Light Mode** - System preference detection with manual toggle
-- **Collapsible Toolbar** - Hide toolbar to maximize canvas space
-- **Status Bar** - Real-time coordinates, zoom level, object count
-- **Responsive Design** - Works on tablets, mobile, and desktop
-- **Keyboard Shortcuts** - Full keyboard support for all tools
-
-## Keyboard Shortcuts
-
-### Tools
-| Key | Tool |
-|-----|------|
-| V | Select |
-| P | Pen |
-| L | Line |
-| A | Arrow |
-| R | Rectangle |
-| C | Circle |
-| T | Text |
-| M | Measure |
-| E | Eraser |
-
-### Edit
-| Shortcut | Action |
-|----------|--------|
-| Ctrl+Z | Undo |
-| Ctrl+Y / Ctrl+Shift+Z | Redo |
-| Ctrl+C | Copy |
-| Ctrl+V | Paste |
-| Delete | Delete selected |
-| Escape | Deselect |
-
-### View
-| Shortcut | Action |
-|----------|--------|
-| +/- | Zoom in/out |
-| Alt+Drag | Pan canvas |
-| G | Toggle grid |
-| S | Toggle snap |
-| ? | Help menu |
-
-## Usage
-
-### Getting Started
-1. Select a tool from the toolbar (or use keyboard shortcuts)
-2. Click and drag on the canvas to draw
-3. Use the color swatches to change stroke/fill colors
-4. Adjust stroke width using the width buttons
-5. Use the measure tool to document distances
-
-### iPad Tips
-- **Pinch with two fingers** to zoom
-- **Drag with two fingers** to pan
-- **Long-press** on objects to access context menu
-- **Drag object corners** to resize shapes
-- Drawings **auto-save every 10 seconds** to browser storage
-
-### Symbols
-1. Click the **⚡ Symbols** button or press the tool icon
-2. Browse categories or search by name
-3. Select a symbol to place it on canvas
-4. Choose a color from the color panel
-5. Click to place the symbol
-
-## Technical Details
-
-### Technology Stack
-- **HTML5 Canvas** - Rendering engine
-- **Vanilla JavaScript** - No framework dependencies
-- **LocalStorage** - Persistent saving
-- **CSS Grid/Flexbox** - Responsive layout
-- **Google Fonts** - Orbitron, Share Tech Mono, Exo 2
-
-### Browser Support
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-- iOS Safari (iPad)
-- Android Chrome
-
-### Performance
-- Optimized canvas rendering
-- Efficient redraw system
-- Touch event debouncing
-- Memory-safe undo/redo with 50-item limit
-
-## File Structure
-
-```
-index.html          # Complete single-file application
-├── HTML           # Semantic markup
-├── CSS            # Responsive styling with dark mode
-└── JavaScript     # Application logic
-    ├── State management
-    ├── Canvas rendering
-    ├── Touch/pointer events
-    ├── Drawing tools
-    ├── UI controls
-    └── Export/save functions
-```
-
-## Storage
-
-- **Theme preference** - Saved to localStorage
-- **Toolbar state** - Saved to localStorage
-- **Drawing data** - Auto-saves to localStorage every 10 seconds
-- **Maximum size** - ~4MB per drawing (browser dependent)
-
-## Customization
-
-### Colors
-Edit CSS variables in `:root` and `body.dark-mode`:
-```css
---cyan: #D97706;        /* Primary accent */
---text: #1F2937;        /* Text color */
---bg: #FFFFFF;          /* Background */
---canvas-bg: #ffffff;   /* Canvas background */
-```
-
-### Grid
-- `gridSize = 20` - Modify grid spacing
-- Toggle grid with **G** key
-
-### Symbols
-Edit the `SYMBOLS` array in JavaScript to add custom symbols:
-```javascript
-{ 
-  cat: 'Category', 
-  name: 'Symbol Name', 
-  draw: (ctx, w, h) => { /* Canvas drawing code */ } 
-}
-```
-
-## Known Limitations
-
-- Single drawing per session (no multi-document support)
-- Symbol image data increases file size
-- Grid snapping only available in grid mode
-- Text input limited to single textarea element
-- Bitmap export only (no vector format)
-
-## Future Enhancements
-
-- [ ] Vector export (SVG)
-- [ ] Multi-page support
-- [ ] Collaborative drawing
-- [ ] Shape templates library
-- [ ] Advanced text formatting
-- [ ] Layer panel
-- [ ] Drawing history viewer
-- [ ] Cloud sync
-
-## License
-
-© Always On Generators - All rights reserved
-
-## Support
-
-For issues, feature requests, or feedback, please contact the Always On Generators development team.
+A professional, browser-based site drawing tool built for Always On Generators field technicians and estimators. Create accurate site layout drawings directly on a tablet or desktop — no software installation required.
 
 ---
 
-**Built for professionals. Optimized for iPad. Simple to use.**
+## 🌐 Live App
+
+👉 [Launch Drawing Pad](https://brandonaog.github.io/AOG-drawing-pad/)
+
+---
+
+## 📋 Features
+
+### 🖊️ Drawing Tools
+| Tool | Key | Description |
+|------|-----|-------------|
+| Select | `V` | Select, move, and resize objects |
+| Pen | `P` | Freehand drawing |
+| Line | `L` | Straight line |
+| Arrow | `A` | Line with arrowhead |
+| Rectangle | `R` | Filled or outlined box |
+| Circle | `C` | Ellipse / circle |
+| Polygon | `O` | Multi-point shape (double-click to finish) |
+| Text | `T` | Add labels and annotations |
+| Measure | `M` | Distance measurement with label |
+| Eraser | `E` | Remove objects by click |
+
+### ⚡ Symbol Library
+Pre-drawn symbols organized by category:
+
+- **Electrical** — Generator, Transfer Switch, Circuit Breaker, Disconnect, GFCI, Ground, Junction Box, Panel Board, Sub Panel, Meter, Transformer, Capacitor, Resistor, Fuse, Switch, Lighting, Motor, Battery
+- **Gas / Fuel** — Gas Meter, Propane Tank, LP Tank (Underground), Ball Valve, Check Valve, Regulator, Tee Connection, Elbow 90°
+- **Site / Misc** — House Outline, North Arrow, Property Line, Setback Line, Concrete Pad, Underground Line, Conduit Run
+
+### 🎨 Style Controls
+- Stroke color picker + 7 preset colors
+- Fill color picker
+- Stroke width (1 / 2 / 4 / 8 px + custom)
+- Line style: Solid / Dashed / Dotted
+- Font size (10–20 px)
+- Opacity slider (5–100%)
+
+### 📐 Canvas
+- Fixed **8.5 × 11 inch** paper (816 × 1056 px at 96 DPI)
+- Grid overlay with major/minor lines
+- Snap-to-grid toggle
+- Zoom in / out / reset
+- Multi-layer canvas (grid, main, overlay)
+
+### 🔧 Object Management
+- **8-point resize handles** on all selected objects
+- Move by drag
+- Right-click context menu:
+  - Copy / Paste / Duplicate
+  - Bring to Front / Send to Back
+  - Delete
+
+### 💾 Save & Export
+- **PNG export** — full resolution canvas image
+- **PDF export** — opens print dialog for PDF save
+- **Auto-save** — saves to browser localStorage every 10 seconds
+
+### 🌙 UI / UX
+- Light and dark mode toggle
+- **Toolbar on/off toggle** (button or press `H`)
+- Responsive layout for iPad / tablet use
+- Touch-action optimized for stylus and finger input
+- Keyboard shortcuts for all major tools
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `V` | Select tool |
+| `P` | Pen tool |
+| `L` | Line tool |
+| `A` | Arrow tool |
+| `R` | Rectangle tool |
+| `C` | Circle tool |
+| `T` | Text tool |
+| `M` | Measure tool |
+| `E` | Eraser tool |
+| `H` | Toggle toolbar |
+| `+` | Zoom in |
+| `-` | Zoom out |
+| `Ctrl+Z` | Undo |
+| `Ctrl+Y` | Redo |
+| `Ctrl+C` | Copy selected |
+| `Ctrl+V` | Paste |
+| `Delete` | Delete selected |
+| `Escape` | Cancel / deselect |
+
+---
+
+## 🚀 Usage
+
+### Option 1 — GitHub Pages (Recommended)
+No setup needed. Open the live link above on any modern browser.
+
+### Option 2 — Run Locally
+```bash
+git clone https://github.com/BrandonAOG/AOG-drawing-pad.git
+cd AOG-drawing-pad
+# Open index.html in any browser
+open index.html
+```
+
+> No build tools, no dependencies, no server required.  
+> Everything runs in a single `index.html` file.
+
+---
+
+## 📱 Device Compatibility
+
+| Device | Support |
+|--------|---------|
+| iPad (Safari) | ✅ Full touch support |
+| iPhone | ✅ Works, best on iPad |
+| Android Tablet | ✅ Chrome recommended |
+| Desktop (Chrome/Edge/Firefox) | ✅ Full support |
+| Apple Pencil | ✅ Pointer events supported |
+
+---
+
+## 🗂️ File Structure
+
+```
+AOG-drawing-pad/
+│
+├── index.html          # Complete single-file application
+└── README.md           # This file
+```
+
+---
+
+## 🔮 Planned Features
+
+- [ ] Scale bar with real-world unit input (feet / meters)
+- [ ] Multi-select with drag box
+- [ ] Custom symbol upload
+- [ ] Drawing title block / stamp
+- [ ] Project save/load (JSON file export)
+- [ ] Text edit on double-click
+- [ ] Snap-to-object / snap-to-edge
+
+---
+
+## 🏢 About
+
+Built for **Always On Generators** — providing reliable standby power solutions.
+
+- 🌐 [Main Hub](https://brandonaog.github.io/AOG-hub/)
+- 📧 Contact: Always On Generators field team
+
+---
+
+## 📄 License
+
+Internal use — Always On Generators © 2025  
+Not for public redistribution without permission.
+```
+
+---
+
+## 📁 How to Add to Your Repo
+
+1. Create a file called **`README.md`** in the root of your repository
+2. Paste the content above
+3. Commit and push — GitHub will render it automatically on the repo homepage
