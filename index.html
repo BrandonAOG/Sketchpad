@@ -6,8 +6,9 @@
 <title>Draw & Annotate</title>
 <style>
   :root{--bg:#0f0f11;--surface:#1a1a1f;--surface2:#24242b;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);--text:#f0f0f2;--text2:#8888aa;--accent:#6c63ff;--accent2:#9d97ff;--radius:10px}
+  html{overscroll-behavior:none;touch-action:none}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
   /* TOOLBAR */
   #toolbar{height:58px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:3px;padding:0 10px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
   #toolbar::-webkit-scrollbar{display:none}
@@ -22,7 +23,7 @@
   #color-swatch:hover{border-color:var(--text)}
   #color-input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
   .slider-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0}
-  input[type=range]{-webkit-appearance:none;appearance:none;width:68px;height:4px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:68px;height:4px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer;touch-action:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer}
   input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
   .val-lbl{font-size:11px;color:var(--text2);min-width:26px}
@@ -301,7 +302,8 @@
   var ZOOM_DAMP = 0.18;
 
   document.addEventListener('touchstart', function(e){
-    if(e.touches.length === 2){
+    if(e.touches.length >= 2){
+      e.preventDefault();
       isPanning = false;
       // drawCanvas listener already set pinching + seeded pinch state if target was canvas
       // For touches outside the canvas we seed here instead
@@ -314,7 +316,7 @@
         twoFingerMidY=(e.touches[0].clientY+e.touches[1].clientY)/2;
       }
     }
-  }, {passive:true});
+  }, {passive:false});
 
   document.addEventListener('touchmove', function(e){
     if(e.touches.length === 2 && pinching){
@@ -632,6 +634,38 @@
     var a=document.createElement('a');
     a.download='annotated.png'; a.href=out.toDataURL('image/png'); a.click();
   }
+
+  // ── Slider touch fix: stop toolbar from stealing horizontal swipes ──
+  function attachSliderTouch(slider, onVal){
+    var startX=0, startVal=0, min=0, max=0, rect=null;
+    slider.addEventListener('touchstart', function(e){
+      e.stopPropagation(); // stop toolbar scroll
+      e.preventDefault();
+      var t=e.touches[0];
+      rect=slider.getBoundingClientRect();
+      startX=t.clientX;
+      min=parseFloat(slider.min); max=parseFloat(slider.max);
+      startVal=parseFloat(slider.value);
+    },{passive:false});
+    slider.addEventListener('touchmove', function(e){
+      e.stopPropagation();
+      e.preventDefault();
+      var t=e.touches[0];
+      var dx=t.clientX-startX;
+      var range=max-min;
+      var pxWidth=rect.width||100;
+      var delta=(dx/pxWidth)*range;
+      var newVal=Math.max(min,Math.min(max,startVal+delta));
+      slider.value=newVal;
+      onVal(newVal);
+    },{passive:false});
+  }
+  attachSliderTouch(strokeSlider, function(v){
+    strokeWidth=Math.round(v); strokeValEl.textContent=strokeWidth;
+  });
+  attachSliderTouch(opacitySlider, function(v){
+    opacity=Math.round(v)/100; opacityValEl.textContent=Math.round(v)+'%';
+  });
 
   // ── Keyboard ──
   document.addEventListener('keydown', function(e){
