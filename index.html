@@ -10,14 +10,14 @@ html{overscroll-behavior:none;touch-action:none}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
 /* TOOLBAR */
-#tb{height:56px;background:var(--surf);border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:2px;padding:0 8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+#tb{height:68px;background:var(--surf);border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:2px;padding:0 8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
 #tb::-webkit-scrollbar{display:none}
-.sep{width:1px;height:26px;background:var(--b2);margin:0 3px;flex-shrink:0}
-.tb-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:38px;height:44px;border-radius:var(--rad);border:1.5px solid transparent;background:transparent;color:var(--txt2);cursor:pointer;flex-shrink:0;transition:all .15s;padding:0 4px;gap:1px}
+.sep{width:1px;height:36px;background:var(--b2);margin:0 3px;flex-shrink:0}
+.tb-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:42px;height:56px;border-radius:var(--rad);border:1.5px solid transparent;background:transparent;color:var(--txt2);cursor:pointer;flex-shrink:0;transition:all .15s;padding:0 4px;gap:1px}
 .tb-btn:hover{background:var(--surf2);color:var(--txt)}
 .tb-btn.active{background:rgba(108,99,255,.2);border-color:var(--acc);color:var(--acc2)}
 .tb-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;flex-shrink:0}
-.tb-btn .lbl{font-size:9px;color:inherit;white-space:nowrap;pointer-events:none;line-height:1}
+.tb-btn .lbl{font-size:9.5px;color:inherit;white-space:nowrap;pointer-events:none;line-height:1;display:block}
 #open-btn{background:var(--acc);color:#fff;border-radius:var(--rad);padding:0 12px;height:36px;border:none;cursor:pointer;font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap}
 /* line style group */
 .ls-group{display:flex;gap:2px;flex-shrink:0}
@@ -107,6 +107,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 #drop-zone p{font-size:15px}
 #drop-zone small{font-size:12px;opacity:.5}
 /* PAN HINT */
+#compass{position:absolute;top:10px;right:10px;pointer-events:none;z-index:3;opacity:0.7}
 #pan-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#ccc;font-size:11px;padding:5px 12px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;z-index:5}
 #pan-hint.show{opacity:1}
 /* MEASURE LABEL + POLY LABEL rendered on canvas - no HTML needed */
@@ -143,9 +144,9 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
   #main{flex-direction:column}
   .tb-btn .lbl{display:block}
   #tb{height:auto;min-height:54px;align-items:center;padding:6px 6px}
-  .tb-btn{height:50px;min-width:40px}
+  .tb-btn{height:52px;min-width:42px}
 }
-@media(min-width:701px){.tb-btn .lbl{display:none}}
+/* labels always visible */
 /* PRINT */
 @media print{
   #tb,#sb,#main .side-panel,#pan-hint{display:none!important}
@@ -272,6 +273,12 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
         <textarea id="text-ov" rows="1"></textarea>
       </div>
     </div>
+    <svg id="compass" width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none">
+      <circle cx="22" cy="22" r="20" stroke="#fff" stroke-width="1.5" fill="rgba(0,0,0,0.4)"/>
+      <polygon points="22,4 18,26 22,22 26,26" fill="#ef4444" stroke="#fff" stroke-width="0.5"/>
+      <polygon points="22,40 18,22 22,26 26,22" fill="#fff" stroke="#fff" stroke-width="0.5"/>
+      <text x="22" y="16" text-anchor="middle" font-size="7" fill="white" font-family="Arial" font-weight="bold">N</text>
+    </svg>
     <div id="pan-hint">Hold <kbd style="background:#333;padding:1px 5px;border-radius:3px">Space</kbd> + drag to pan</div>
   </div>
 
@@ -699,7 +706,7 @@ function afterLoad(){
   initLayers(baseCv.width,baseCv.height);
   undoStack=[]; redoStack=[];
   baseLoaded=true;
-  dropZone.classList.add('hidden');
+  dropZone.classList.add('hidden'); document.getElementById('compass').style.display='block';
   canvasWrap.style.display='inline-block';
   subbar.classList.add('vis');
   pgGrp(!!pdfDoc);
@@ -927,6 +934,15 @@ function formatLength(px){
 }
 
 // ── POLYGON / AREA ──
+drawCv.addEventListener('touchend',function(e){
+  if(pinching||drawing) return;
+  if(e.changedTouches.length!==1) return;
+  var fakeE={clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY,touches:[]};
+  var pos=getPos(fakeE); var p=snapPt(pos.x,pos.y);
+  if(tool==='polygon'){ if(!suppressPolyAdd){ polyPoints.push(p); polyActive=true; redrawPolyPreview(p.x,p.y); } }
+  else if(tool==='leader'){ handleLeaderClick(p.x,p.y,fakeE); }
+},{passive:true});
+
 drawCv.addEventListener('click',function(e){
   if(pinching||drawing) return;
   var pos=getPos(e); var p=snapPt(pos.x,pos.y);
@@ -941,12 +957,29 @@ drawCv.addEventListener('click',function(e){
 });
 
 drawCv.addEventListener('dblclick',function(e){
-  if(tool==='polygon'&&polyPoints.length>=3){
-    closePolygon();
-  }
+  if(tool==='polygon'&&polyPoints.length>=3){ closePolygon(); }
 });
+// Mobile double-tap for polygon close
+var lastTap=0, suppressPolyAdd=false;
+drawCv.addEventListener('touchend',function(e){
+  if(tool!=='polygon') return;
+  var now=Date.now();
+  if(now-lastTap<350&&polyPoints.length>=2){
+    suppressPolyAdd=true;
+    // remove the last point that was just added by the click handler, then close
+    setTimeout(function(){ if(polyPoints.length>=3) closePolygon(); suppressPolyAdd=false; },0);
+  }
+  lastTap=now;
+},{passive:true});
 
 drawCv.addEventListener('mousemove',function(e){
+  if(tool==='leader'&&leaderStep===1){
+    // show preview line for leader
+    composite();
+    var pos=getPos(e);
+    dCtx.save(); dCtx.strokeStyle=color; dCtx.lineWidth=strokeW; dCtx.setLineDash([4,3]); dCtx.globalAlpha=0.6;
+    dCtx.beginPath(); dCtx.moveTo(leaderP1x,leaderP1y); dCtx.lineTo(pos.x,pos.y); dCtx.stroke(); dCtx.restore();
+  }
   if(!polyActive||tool!=='polygon') return;
   var pos=getPos(e);
   redrawPolyPreview(pos.x,pos.y);
@@ -1146,9 +1179,9 @@ document.querySelectorAll('.tb-btn[data-tool]').forEach(function(btn){
     tool=btn.dataset.tool;
     document.querySelectorAll('.tb-btn[data-tool]').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
-    var cur=tool==='text'?'text':tool==='eraser'?'cell':tool==='pan'?'grab':'crosshair';
+    var cur=tool==='text'?'text':tool==='eraser'?'cell':tool==='pan'?'grab':tool==='stamp'?'copy':'crosshair';
     drawCv.style.cursor=cur;
-    if(tool==='stamp') openStampPicker();
+    if(tool==='stamp'){ openStampPicker(); return; }
   });
 });
 
