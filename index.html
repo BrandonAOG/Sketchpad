@@ -5,55 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Draw & Annotate</title>
 <style>
-  :root {
-    --bg:#0f0f11;--surface:#1a1a1f;--surface2:#24242b;
-    --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);
-    --text:#f0f0f2;--text2:#8888aa;--accent:#6c63ff;--accent2:#9d97ff;
-    --toolbar-h:60px;--sub-h:52px;--radius:10px;
-  }
+  :root{--bg:#0f0f11;--surface:#1a1a1f;--surface2:#24242b;--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.15);--text:#f0f0f2;--text2:#8888aa;--accent:#6c63ff;--accent2:#9d97ff;--radius:10px}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
-  #toolbar{height:var(--toolbar-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:4px;padding:0 10px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+  /* TOOLBAR */
+  #toolbar{height:58px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:3px;padding:0 10px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
   #toolbar::-webkit-scrollbar{display:none}
-  .sep{width:1px;height:28px;background:var(--border2);margin:0 4px;flex-shrink:0}
-  .tool-btn{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:var(--radius);border:1.5px solid transparent;background:transparent;color:var(--text2);cursor:pointer;flex-shrink:0;transition:all .15s;position:relative}
+  .sep{width:1px;height:26px;background:var(--border2);margin:0 3px;flex-shrink:0}
+  .tool-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:var(--radius);border:1.5px solid transparent;background:transparent;color:var(--text2);cursor:pointer;flex-shrink:0;transition:all .15s;position:relative;font-size:13px}
   .tool-btn:hover{background:var(--surface2);color:var(--text)}
-  .tool-btn.active{background:rgba(108,99,255,.18);border-color:var(--accent);color:var(--accent2)}
-  .tool-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
-  #upload-btn{background:var(--accent);color:#fff;border-radius:var(--radius);padding:0 14px;height:36px;border:none;cursor:pointer;font-size:13px;font-weight:600;flex-shrink:0;transition:opacity .15s;white-space:nowrap}
+  .tool-btn.active{background:rgba(108,99,255,.2);border-color:var(--accent);color:var(--accent2)}
+  .tool-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+  #upload-btn{background:var(--accent);color:#fff;border-radius:var(--radius);padding:0 13px;height:34px;border:none;cursor:pointer;font-size:13px;font-weight:600;flex-shrink:0;white-space:nowrap}
   #upload-btn:hover{opacity:.85}
-  #color-pick-wrap{position:relative;flex-shrink:0;cursor:pointer}
-  #color-swatch{width:32px;height:32px;border-radius:50%;border:2.5px solid var(--border2);display:block;transition:border-color .15s}
+  #color-swatch{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--border2);cursor:pointer;flex-shrink:0;transition:border-color .15s}
   #color-swatch:hover{border-color:var(--text)}
   #color-input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
-  #stroke-wrap,#opacity-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0}
-  input[type=range]{-webkit-appearance:none;appearance:none;width:72px;height:4px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
-  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
-  .val-label{font-size:12px;color:var(--text2);min-width:28px}
-  #subbar{height:var(--sub-h);background:var(--surface);border-bottom:1px solid var(--border);display:none;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0}
+  .slider-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:68px;height:4px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
+  .val-lbl{font-size:11px;color:var(--text2);min-width:26px}
+  .tip{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#222;color:#fff;font-size:11px;padding:3px 7px;border-radius:5px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:100}
+  .tool-btn:hover .tip{opacity:1}
+  /* SUBBAR */
+  #subbar{height:44px;background:var(--surface);border-bottom:1px solid var(--border);display:none;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0;gap:8px}
   #subbar.visible{display:flex}
-  #page-nav{display:flex;align-items:center;gap:10px}
-  .nav-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  #page-nav{display:flex;align-items:center;gap:8px}
+  .nav-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:background .15s}
   .nav-btn:hover{background:var(--border2)}
   .nav-btn:disabled{opacity:.3;cursor:default}
-  #page-info{font-size:13px;color:var(--text2)}
-  #save-btn{background:transparent;border:1.5px solid var(--accent);color:var(--accent2);border-radius:var(--radius);padding:0 16px;height:34px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+  #page-info{font-size:12px;color:var(--text2)}
+  /* ZOOM CONTROLS */
+  #zoom-controls{display:flex;align-items:center;gap:4px}
+  .zoom-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0}
+  .zoom-btn:hover{background:var(--border2)}
+  #zoom-label{font-size:11px;color:var(--text2);min-width:38px;text-align:center}
+  #save-btn{background:transparent;border:1.5px solid var(--accent);color:var(--accent2);border-radius:var(--radius);padding:0 14px;height:30px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap}
   #save-btn:hover{background:rgba(108,99,255,.15)}
-  #canvas-area{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:24px;background:var(--bg);position:relative}
-  #canvas-wrap{position:relative;display:none;box-shadow:0 8px 40px rgba(0,0,0,.6);border-radius:4px;overflow:hidden;cursor:crosshair}
+  /* VIEWPORT */
+  #viewport{flex:1;overflow:hidden;position:relative;cursor:default}
+  #scene{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+  #canvas-wrap{position:relative;display:none;box-shadow:0 8px 48px rgba(0,0,0,.7);border-radius:3px;overflow:hidden}
   #base-canvas{display:block}
   #draw-canvas{position:absolute;top:0;left:0;display:block;touch-action:none}
-  #drop-zone{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--text2);pointer-events:none;padding:32px}
+  /* DROP ZONE */
+  #drop-zone{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--text2);pointer-events:none;padding:32px}
   #drop-zone.hidden{display:none}
-  #drop-zone svg{width:64px;height:64px;opacity:.3}
+  #drop-zone svg{width:60px;height:60px;opacity:.25}
   #drop-zone p{font-size:15px;text-align:center}
-  #drop-zone span{font-size:13px;opacity:.6}
-  #canvas-area.drag-over{outline:2px dashed var(--accent);outline-offset:-12px}
-  #text-overlay{position:absolute;display:none;background:rgba(108,99,255,.12);border:1.5px solid var(--accent);border-radius:4px;padding:4px 6px;color:#fff;font-family:inherit;outline:none;resize:none;overflow:hidden;min-width:80px;min-height:28px;z-index:10;white-space:pre}
-  .tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s}
-  .tool-btn:hover .tip{opacity:1}
-  @media(max-width:600px){#canvas-area{padding:12px}}
+  #drop-zone small{font-size:12px;opacity:.55}
+  #viewport.drag-over{outline:2px dashed var(--accent);outline-offset:-8px}
+  /* SPACE-PAN hint */
+  #pan-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#ccc;font-size:11px;padding:5px 12px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap}
+  #pan-hint.show{opacity:1}
+  /* TEXT OVERLAY */
+  #text-overlay{position:absolute;display:none;background:rgba(108,99,255,.1);border:1.5px solid var(--accent);border-radius:3px;padding:3px 5px;color:#fff;font-family:inherit;outline:none;resize:none;overflow:hidden;min-width:60px;min-height:24px;z-index:20;white-space:pre}
 </style>
 </head>
 <body>
@@ -62,64 +69,38 @@
   <button id="upload-btn">＋ Open File</button>
   <input type="file" id="file-input" accept="image/*,.pdf" style="display:none">
   <div class="sep"></div>
-  <button class="tool-btn active" data-tool="pen">
-    <svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg>
-    <span class="tip">Pen (P)</span>
-  </button>
-  <button class="tool-btn" data-tool="line">
-    <svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/></svg>
-    <span class="tip">Line (L)</span>
-  </button>
-  <button class="tool-btn" data-tool="arrow">
-    <svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg>
-    <span class="tip">Arrow (A)</span>
-  </button>
-  <button class="tool-btn" data-tool="rect">
-    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/></svg>
-    <span class="tip">Rectangle (R)</span>
-  </button>
-  <button class="tool-btn" data-tool="ellipse">
-    <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg>
-    <span class="tip">Ellipse (E)</span>
-  </button>
-  <button class="tool-btn" data-tool="text">
-    <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-    <span class="tip">Text (T)</span>
-  </button>
-  <button class="tool-btn" data-tool="eraser">
-    <svg viewBox="0 0 24 24"><path d="M20 20H7L3 16l10-10 7 7-3 3"/><path d="M6 10l8 8"/></svg>
-    <span class="tip">Eraser (X)</span>
-  </button>
+  <!-- DRAW TOOLS -->
+  <button class="tool-btn active" data-tool="pen"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg><span class="tip">Pen (P)</span></button>
+  <button class="tool-btn" data-tool="line"><svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/></svg><span class="tip">Line (L)</span></button>
+  <button class="tool-btn" data-tool="arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg><span class="tip">Arrow (A)</span></button>
+  <button class="tool-btn" data-tool="rect"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/></svg><span class="tip">Rectangle (R)</span></button>
+  <button class="tool-btn" data-tool="ellipse"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg><span class="tip">Ellipse (E)</span></button>
+  <button class="tool-btn" data-tool="text"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg><span class="tip">Text (T)</span></button>
+  <button class="tool-btn" data-tool="eraser"><svg viewBox="0 0 24 24"><path d="M20 20H7L3 16l10-10 7 7-3 3"/><path d="M6 10l8 8"/></svg><span class="tip">Eraser (X)</span></button>
+  <!-- PAN TOOL -->
+  <button class="tool-btn" data-tool="pan"><svg viewBox="0 0 24 24"><path d="M18 11V8a2 2 0 0 0-4 0v3"/><path d="M14 11V6a2 2 0 0 0-4 0v5"/><path d="M10 11V5a2 2 0 0 0-4 0v9"/><path d="M6 14a4 4 0 0 0 3.67 4h2.5c1.74 0 3.83-.82 3.83-4v-3"/></svg><span class="tip">Pan (Space)</span></button>
   <div class="sep"></div>
-  <div id="color-pick-wrap">
+  <!-- COLOR + SLIDERS -->
+  <div style="position:relative;flex-shrink:0">
     <div id="color-swatch" style="background:#6c63ff"></div>
     <input type="color" id="color-input" value="#6c63ff">
   </div>
   <div class="sep"></div>
-  <div id="stroke-wrap">
-    <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0;opacity:.5"><circle cx="8" cy="8" r="3" fill="#aaa"/></svg>
+  <div class="slider-wrap">
+    <svg width="14" height="14" viewBox="0 0 14 14" style="flex-shrink:0;opacity:.45"><circle cx="7" cy="7" r="3.5" fill="#aaa"/></svg>
     <input type="range" id="stroke-slider" min="1" max="40" value="3">
-    <span class="val-label" id="stroke-val">3</span>
+    <span class="val-lbl" id="stroke-val">3</span>
   </div>
   <div class="sep"></div>
-  <div id="opacity-wrap">
-    <svg width="16" height="16" viewBox="0 0 16 16" style="flex-shrink:0;opacity:.5"><rect x="2" y="6" width="12" height="4" rx="2" fill="#aaa"/></svg>
+  <div class="slider-wrap">
+    <svg width="14" height="14" viewBox="0 0 14 14" style="flex-shrink:0;opacity:.45"><rect x="1" y="5" width="12" height="4" rx="2" fill="#aaa"/></svg>
     <input type="range" id="opacity-slider" min="10" max="100" value="100">
-    <span class="val-label" id="opacity-val">100%</span>
+    <span class="val-lbl" id="opacity-val">100%</span>
   </div>
   <div class="sep"></div>
-  <button class="tool-btn" id="btn-undo">
-    <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
-    <span class="tip">Undo (Ctrl+Z)</span>
-  </button>
-  <button class="tool-btn" id="btn-redo">
-    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/></svg>
-    <span class="tip">Redo (Ctrl+Y)</span>
-  </button>
-  <button class="tool-btn" id="btn-clear">
-    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-    <span class="tip">Clear All</span>
-  </button>
+  <button class="tool-btn" id="btn-undo"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg><span class="tip">Undo (Ctrl+Z)</span></button>
+  <button class="tool-btn" id="btn-redo"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/></svg><span class="tip">Redo (Ctrl+Y)</span></button>
+  <button class="tool-btn" id="btn-clear"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg><span class="tip">Clear All</span></button>
 </div>
 
 <div id="subbar">
@@ -128,402 +109,492 @@
     <span id="page-info">Page 1 / 1</span>
     <button class="nav-btn" id="btn-next">&#8594;</button>
   </div>
+  <div id="zoom-controls">
+    <button class="zoom-btn" id="btn-zoom-out">&#8722;</button>
+    <span id="zoom-label">100%</span>
+    <button class="zoom-btn" id="btn-zoom-in">&#43;</button>
+    <button class="zoom-btn" id="btn-zoom-fit" style="width:auto;padding:0 8px;font-size:11px">Fit</button>
+  </div>
   <button id="save-btn">&#8595; Save PNG</button>
 </div>
 
-<div id="canvas-area">
+<div id="viewport">
   <div id="drop-zone">
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="8" y="8" width="48" height="48" rx="6"/>
       <polyline points="24 28 32 20 40 28"/>
       <line x1="32" y1="20" x2="32" y2="44"/>
     </svg>
     <p>Drop an image or PDF here</p>
-    <span>or click <strong>＋ Open File</strong> above</span>
+    <small>or click <strong>＋ Open File</strong> above</small>
   </div>
-  <div id="canvas-wrap">
-    <canvas id="base-canvas"></canvas>
-    <canvas id="draw-canvas"></canvas>
-    <textarea id="text-overlay" rows="1"></textarea>
+  <div id="scene">
+    <div id="canvas-wrap">
+      <canvas id="base-canvas"></canvas>
+      <canvas id="draw-canvas"></canvas>
+      <textarea id="text-overlay" rows="1"></textarea>
+    </div>
   </div>
+  <div id="pan-hint">Hold <kbd style="background:#333;padding:1px 4px;border-radius:3px">Space</kbd> + drag to pan</div>
 </div>
 
 <script>
 (function(){
-  // ── DOM refs ──
-  const uploadBtn    = document.getElementById('upload-btn');
-  const fileInput    = document.getElementById('file-input');
-  const colorSwatch  = document.getElementById('color-swatch');
-  const colorInput   = document.getElementById('color-input');
-  const strokeSlider = document.getElementById('stroke-slider');
-  const strokeValEl  = document.getElementById('stroke-val');
-  const opacitySlider= document.getElementById('opacity-slider');
-  const opacityValEl = document.getElementById('opacity-val');
-  const btnUndo      = document.getElementById('btn-undo');
-  const btnRedo      = document.getElementById('btn-redo');
-  const btnClear     = document.getElementById('btn-clear');
-  const btnPrev      = document.getElementById('btn-prev');
-  const btnNext      = document.getElementById('btn-next');
-  const saveBtnEl    = document.getElementById('save-btn');
-  const canvasArea   = document.getElementById('canvas-area');
-  const canvasWrap   = document.getElementById('canvas-wrap');
-  const dropZone     = document.getElementById('drop-zone');
-  const subbar       = document.getElementById('subbar');
-  const pageInfoEl   = document.getElementById('page-info');
-  const baseCanvas   = document.getElementById('base-canvas');
-  const drawCanvas   = document.getElementById('draw-canvas');
-  const textOverlay  = document.getElementById('text-overlay');
-  const bCtx         = baseCanvas.getContext('2d');
-  const dCtx         = drawCanvas.getContext('2d');
+  var uploadBtn    = document.getElementById('upload-btn');
+  var fileInput    = document.getElementById('file-input');
+  var colorSwatch  = document.getElementById('color-swatch');
+  var colorInput   = document.getElementById('color-input');
+  var strokeSlider = document.getElementById('stroke-slider');
+  var strokeValEl  = document.getElementById('stroke-val');
+  var opacitySlider= document.getElementById('opacity-slider');
+  var opacityValEl = document.getElementById('opacity-val');
+  var btnUndo      = document.getElementById('btn-undo');
+  var btnRedo      = document.getElementById('btn-redo');
+  var btnClear     = document.getElementById('btn-clear');
+  var btnPrev      = document.getElementById('btn-prev');
+  var btnNext      = document.getElementById('btn-next');
+  var saveBtnEl    = document.getElementById('save-btn');
+  var btnZoomIn    = document.getElementById('btn-zoom-in');
+  var btnZoomOut   = document.getElementById('btn-zoom-out');
+  var btnZoomFit   = document.getElementById('btn-zoom-fit');
+  var zoomLabel    = document.getElementById('zoom-label');
+  var viewport     = document.getElementById('viewport');
+  var scene        = document.getElementById('scene');
+  var canvasWrap   = document.getElementById('canvas-wrap');
+  var dropZone     = document.getElementById('drop-zone');
+  var subbar       = document.getElementById('subbar');
+  var pageInfoEl   = document.getElementById('page-info');
+  var baseCanvas   = document.getElementById('base-canvas');
+  var drawCanvas   = document.getElementById('draw-canvas');
+  var textOverlay  = document.getElementById('text-overlay');
+  var panHint      = document.getElementById('pan-hint');
+  var bCtx = baseCanvas.getContext('2d');
+  var dCtx = drawCanvas.getContext('2d');
 
-  // ── State ──
-  let tool = 'pen', color = '#6c63ff', strokeWidth = 3, opacity = 1;
-  let drawing = false, startX = 0, startY = 0;
-  let undoStack = [], redoStack = [];
-  let savedSnap = null;
-  let pdfDoc = null, currentPage = 1;
-  let baseImageData = null;
-  let textX = 0, textY = 0;
-  const FONT_SIZE = 20;
+  // ── App state ──
+  var tool = 'pen', color = '#6c63ff', strokeWidth = 3, opacity = 1;
+  var drawing = false, startX = 0, startY = 0;
+  var undoStack = [], redoStack = [], savedSnap = null;
+  var pdfDoc = null, currentPage = 1;
+  var baseImageData = null;
+  var textX = 0, textY = 0;
+  var FONT_SIZE = 20;
 
-  // ── Upload button ──
-  uploadBtn.addEventListener('click', function(){ fileInput.click(); });
-  fileInput.addEventListener('change', function(e){
-    var f = e.target.files[0];
-    if(f) loadFile(f);
-    e.target.value = '';
-  });
+  // ── Viewport / pan / zoom ──
+  var zoom = 1, panX = 0, panY = 0;
+  var isPanning = false, spaceDown = false;
+  var lastPanX = 0, lastPanY = 0;
+  var pinchDist0 = 0, pinchZoom0 = 1, pinchPanX0 = 0, pinchPanY0 = 0;
+  var pinching = false;
 
-  // ── Drag & drop ──
-  canvasArea.addEventListener('dragover', function(e){ e.preventDefault(); canvasArea.classList.add('drag-over'); });
-  canvasArea.addEventListener('dragleave', function(){ canvasArea.classList.remove('drag-over'); });
-  canvasArea.addEventListener('drop', function(e){
+  function applyTransform(){
+    scene.style.transform = 'translate('+panX+'px,'+panY+'px) scale('+zoom+')';
+    zoomLabel.textContent = Math.round(zoom*100)+'%';
+  }
+
+  function clampPan(){
+    // allow canvas to stay at least 80px visible
+    var vw = viewport.clientWidth, vh = viewport.clientHeight;
+    var cw = baseCanvas.width * zoom, ch = baseCanvas.height * zoom;
+    var minX = Math.min(80 - cw, 0), maxX = Math.max(vw - 80, 0);
+    var minY = Math.min(80 - ch, 0), maxY = Math.max(vh - 80, 0);
+    panX = Math.max(minX, Math.min(maxX, panX));
+    panY = Math.max(minY, Math.min(maxY, panY));
+  }
+
+  function fitToViewport(){
+    var vw = viewport.clientWidth - 48, vh = viewport.clientHeight - 48;
+    var cw = baseCanvas.width, ch = baseCanvas.height;
+    if(!cw || !ch) return;
+    zoom = Math.min(vw/cw, vh/ch, 1); // never zoom in past 100% on fit
+    zoom = Math.max(0.05, zoom);
+    panX = Math.round((viewport.clientWidth  - cw * zoom) / 2);
+    panY = Math.round((viewport.clientHeight - ch * zoom) / 2);
+    applyTransform();
+  }
+
+  function zoomAt(factor, cx, cy){
+    // cx,cy = viewport coords of zoom center
+    var newZoom = Math.max(0.05, Math.min(10, zoom * factor));
+    var ratio = newZoom / zoom;
+    panX = cx - ratio * (cx - panX);
+    panY = cy - ratio * (cy - panY);
+    zoom = newZoom;
+    clampPan();
+    applyTransform();
+  }
+
+  btnZoomIn .addEventListener('click', function(){ zoomAt(1.25, viewport.clientWidth/2, viewport.clientHeight/2); });
+  btnZoomOut.addEventListener('click', function(){ zoomAt(0.8,  viewport.clientWidth/2, viewport.clientHeight/2); });
+  btnZoomFit.addEventListener('click', fitToViewport);
+
+  // mouse wheel zoom
+  viewport.addEventListener('wheel', function(e){
     e.preventDefault();
-    canvasArea.classList.remove('drag-over');
-    var f = e.dataTransfer.files[0];
-    if(f) loadFile(f);
+    var rect = viewport.getBoundingClientRect();
+    var cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    var factor = e.deltaY < 0 ? 1.12 : 0.89;
+    zoomAt(factor, cx, cy);
+  }, {passive:false});
+
+  // ── Pan logic ──
+  function startPan(clientX, clientY){
+    isPanning = true;
+    lastPanX = clientX; lastPanY = clientY;
+  }
+  function movePan(clientX, clientY){
+    if(!isPanning) return;
+    panX += clientX - lastPanX;
+    panY += clientY - lastPanY;
+    lastPanX = clientX; lastPanY = clientY;
+    clampPan();
+    applyTransform();
+  }
+  function endPan(){ isPanning = false; }
+
+  // spacebar pan hint
+  document.addEventListener('keydown', function(e){
+    if(e.code === 'Space' && e.target === document.body){ e.preventDefault(); spaceDown = true; viewport.style.cursor='grab'; showHint(); }
+  });
+  document.addEventListener('keyup', function(e){
+    if(e.code === 'Space'){ spaceDown = false; viewport.style.cursor=''; hideHint(); }
+  });
+  var hintTimer;
+  function showHint(){ panHint.classList.add('show'); clearTimeout(hintTimer); hintTimer = setTimeout(hideHint, 2000); }
+  function hideHint(){ panHint.classList.remove('show'); }
+
+  // ── Viewport mouse events (pan) ──
+  viewport.addEventListener('mousedown', function(e){
+    if(spaceDown || tool === 'pan'){ e.preventDefault(); startPan(e.clientX, e.clientY); viewport.style.cursor='grabbing'; return; }
+    // middle-click pan
+    if(e.button === 1){ e.preventDefault(); startPan(e.clientX, e.clientY); return; }
+  });
+  window.addEventListener('mousemove', function(e){
+    if(isPanning) movePan(e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', function(e){
+    if(isPanning){ endPan(); viewport.style.cursor = (spaceDown||tool==='pan') ? 'grab' : ''; }
   });
 
-  // ── Tool buttons ──
-  document.querySelectorAll('.tool-btn[data-tool]').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      commitText();
-      tool = btn.dataset.tool;
-      document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      drawCanvas.style.cursor = tool === 'text' ? 'text' : tool === 'eraser' ? 'cell' : 'crosshair';
-    });
-  });
+  // ── Touch pan & pinch (on viewport, outside draw canvas) ──
+  viewport.addEventListener('touchstart', function(e){
+    if(e.target === drawCanvas) return; // drawing handled separately
+    if(e.touches.length === 1 && tool === 'pan'){
+      startPan(e.touches[0].clientX, e.touches[0].clientY);
+    } else if(e.touches.length === 2){
+      pinching = true;
+      pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      pinchZoom0 = zoom;
+      pinchPanX0 = panX; pinchPanY0 = panY;
+      var midX = (e.touches[0].clientX + e.touches[1].clientX)/2;
+      var midY = (e.touches[0].clientY + e.touches[1].clientY)/2;
+      var rect = viewport.getBoundingClientRect();
+      lastPanX = midX - rect.left; lastPanY = midY - rect.top;
+    }
+  }, {passive:true});
 
-  // ── Undo / Redo / Clear ──
-  btnUndo.addEventListener('click', function(){ undoFn(); });
-  btnRedo.addEventListener('click', function(){ redoFn(); });
-  btnClear.addEventListener('click', function(){ clearFn(); });
+  viewport.addEventListener('touchmove', function(e){
+    if(e.target === drawCanvas && !pinching) return;
+    e.preventDefault();
+    if(pinching && e.touches.length === 2){
+      var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      var scale = dist / pinchDist0;
+      var newZoom = Math.max(0.05, Math.min(10, pinchZoom0 * scale));
+      var midX = (e.touches[0].clientX + e.touches[1].clientX)/2;
+      var midY = (e.touches[0].clientY + e.touches[1].clientY)/2;
+      var rect = viewport.getBoundingClientRect();
+      var cx = midX - rect.left, cy = midY - rect.top;
+      var ratio = newZoom / zoom;
+      panX = cx - ratio*(cx - panX);
+      panY = cy - ratio*(cy - panY);
+      zoom = newZoom;
+      clampPan(); applyTransform();
+    } else if(isPanning && e.touches.length === 1){
+      movePan(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  },{passive:false});
 
-  // ── Color ──
-  colorSwatch.addEventListener('click', function(){ colorInput.click(); });
-  colorInput.addEventListener('input', function(e){
-    color = e.target.value;
-    colorSwatch.style.background = color;
-  });
+  viewport.addEventListener('touchend', function(e){
+    if(e.touches.length < 2) pinching = false;
+    if(e.touches.length === 0) endPan();
+  },{passive:true});
 
-  // ── Stroke ──
-  strokeSlider.addEventListener('input', function(e){
-    strokeWidth = parseInt(e.target.value);
-    strokeValEl.textContent = strokeWidth;
-  });
+  // two-finger pan on draw canvas too
+  drawCanvas.addEventListener('touchstart', function(e){
+    if(e.touches.length === 2){ pinching = true; /* handled by viewport listener */ }
+  },{passive:true});
 
-  // ── Opacity ──
-  opacitySlider.addEventListener('input', function(e){
-    opacity = parseInt(e.target.value) / 100;
-    opacityValEl.textContent = e.target.value + '%';
-  });
+  // ── Convert viewport coords → canvas coords ──
+  function vpToCanvas(clientX, clientY){
+    var rect = viewport.getBoundingClientRect();
+    var vx = clientX - rect.left, vy = clientY - rect.top;
+    return { x: (vx - panX) / zoom, y: (vy - panY) / zoom };
+  }
 
-  // ── Page nav / save ──
-  btnPrev.addEventListener('click', function(){ changePage(-1); });
-  btnNext.addEventListener('click', function(){ changePage(1); });
-  saveBtnEl.addEventListener('click', function(){ saveImage(); });
+  function getPos(e){
+    if(e.touches && e.touches.length > 0)    return vpToCanvas(e.touches[0].clientX, e.touches[0].clientY);
+    if(e.changedTouches && e.changedTouches.length > 0) return vpToCanvas(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    return vpToCanvas(e.clientX, e.clientY);
+  }
 
-  // ── File loading ──
-  function loadFile(file){
-    if(file.type === 'application/pdf') loadPDF(file);
-    else if(file.type.startsWith('image/')) loadImage(file);
+  // ── Upload / File ──
+  uploadBtn.addEventListener('click', function(){ fileInput.click(); });
+  fileInput.addEventListener('change', function(e){ var f=e.target.files[0]; if(f) loadFile(f); e.target.value=''; });
+  viewport.addEventListener('dragover', function(e){ e.preventDefault(); viewport.classList.add('drag-over'); });
+  viewport.addEventListener('dragleave', function(){ viewport.classList.remove('drag-over'); });
+  viewport.addEventListener('drop', function(e){ e.preventDefault(); viewport.classList.remove('drag-over'); var f=e.dataTransfer.files[0]; if(f) loadFile(f); });
+
+  function loadFile(f){
+    if(f.type==='application/pdf') loadPDF(f);
+    else if(f.type.startsWith('image/')) loadImage(f);
     else alert('Please open an image or PDF file.');
   }
 
-  function loadImage(file){
-    var url = URL.createObjectURL(file);
+  function loadImage(f){
+    var url = URL.createObjectURL(f);
     var img = new Image();
     img.onload = function(){
       pdfDoc = null;
-      var maxW = Math.min(img.width, 1600);
-      var scale = maxW / img.width;
-      var w = Math.round(img.width * scale);
-      var h = Math.round(img.height * scale);
-      resize(w, h);
-      bCtx.drawImage(img, 0, 0, w, h);
-      baseImageData = bCtx.getImageData(0, 0, w, h);
-      undoStack = []; redoStack = [];
+      resize(img.width, img.height);
+      bCtx.drawImage(img, 0, 0);
+      baseImageData = bCtx.getImageData(0,0,img.width,img.height);
+      undoStack=[]; redoStack=[];
       showCanvas(false);
+      fitToViewport();
       URL.revokeObjectURL(url);
     };
     img.onerror = function(){ alert('Could not load image.'); URL.revokeObjectURL(url); };
     img.src = url;
   }
 
-  function loadPDF(file){
-    if(typeof pdfjsLib === 'undefined'){
-      alert('PDF support failed to load. Please check your internet connection and reload.');
-      return;
-    }
-    var url = URL.createObjectURL(file);
+  function loadPDF(f){
+    if(typeof pdfjsLib==='undefined'){ alert('PDF support unavailable. Check your internet connection.'); return; }
+    var url = URL.createObjectURL(f);
     pdfjsLib.getDocument(url).promise.then(function(doc){
-      pdfDoc = doc;
-      currentPage = 1;
+      pdfDoc=doc; currentPage=1;
       renderPDFPage(currentPage);
       URL.revokeObjectURL(url);
-    }).catch(function(err){
-      alert('Could not load PDF: ' + err.message);
-      URL.revokeObjectURL(url);
-    });
+    }).catch(function(err){ alert('Could not load PDF: '+err.message); URL.revokeObjectURL(url); });
   }
 
   function renderPDFPage(num){
     pdfDoc.getPage(num).then(function(page){
-      var baseScale = Math.min(1200 / page.getViewport({scale:1}).width, 2);
-      var vp = page.getViewport({scale: baseScale});
+      var vp1 = page.getViewport({scale:1});
+      var sc  = Math.min(2400/vp1.width, 2);
+      var vp  = page.getViewport({scale:sc});
       resize(Math.round(vp.width), Math.round(vp.height));
-      page.render({canvasContext: bCtx, viewport: vp}).promise.then(function(){
-        baseImageData = bCtx.getImageData(0, 0, baseCanvas.width, baseCanvas.height);
-        undoStack = []; redoStack = [];
-        pageInfoEl.textContent = 'Page ' + num + ' / ' + pdfDoc.numPages;
-        btnPrev.disabled = (num <= 1);
-        btnNext.disabled = (num >= pdfDoc.numPages);
+      page.render({canvasContext:bCtx,viewport:vp}).promise.then(function(){
+        baseImageData = bCtx.getImageData(0,0,baseCanvas.width,baseCanvas.height);
+        undoStack=[]; redoStack=[];
+        pageInfoEl.textContent = 'Page '+num+' / '+pdfDoc.numPages;
+        btnPrev.disabled = num<=1;
+        btnNext.disabled = num>=pdfDoc.numPages;
         showCanvas(true);
+        fitToViewport();
       });
     });
   }
 
-  function changePage(delta){
+  function changePage(d){
     if(!pdfDoc) return;
-    var next = currentPage + delta;
-    if(next < 1 || next > pdfDoc.numPages) return;
-    currentPage = next;
-    renderPDFPage(currentPage);
+    var n = currentPage+d;
+    if(n<1||n>pdfDoc.numPages) return;
+    currentPage=n; renderPDFPage(n);
   }
 
-  function resize(w, h){
+  function resize(w,h){
     baseCanvas.width = drawCanvas.width = w;
-    baseCanvas.height = drawCanvas.height = h;
-    canvasWrap.style.width = w + 'px';
-    canvasWrap.style.height = h + 'px';
+    baseCanvas.height= drawCanvas.height= h;
+    canvasWrap.style.width=w+'px'; canvasWrap.style.height=h+'px';
   }
 
   function showCanvas(isPDF){
     dropZone.classList.add('hidden');
-    canvasWrap.style.display = 'inline-block';
+    canvasWrap.style.display='inline-block';
     subbar.classList.add('visible');
-    btnPrev.style.display = isPDF ? '' : 'none';
-    btnNext.style.display = isPDF ? '' : 'none';
-    pageInfoEl.style.display = isPDF ? '' : 'none';
+    btnPrev.style.display   = isPDF?'':'none';
+    btnNext.style.display   = isPDF?'':'none';
+    pageInfoEl.style.display= isPDF?'':'none';
   }
 
-  // ── Pointer helpers ──
-  function getPos(e){
-    var rect = drawCanvas.getBoundingClientRect();
-    var sx = drawCanvas.width / rect.width;
-    var sy = drawCanvas.height / rect.height;
-    var cx, cy;
-    if(e.touches && e.touches.length > 0){ cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
-    else if(e.changedTouches && e.changedTouches.length > 0){ cx = e.changedTouches[0].clientX; cy = e.changedTouches[0].clientY; }
-    else { cx = e.clientX; cy = e.clientY; }
-    return { x: (cx - rect.left) * sx, y: (cy - rect.top) * sy };
-  }
+  // ── Tool selection ──
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      commitText();
+      tool=btn.dataset.tool;
+      document.querySelectorAll('.tool-btn[data-tool]').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      var c = tool==='text'?'text':tool==='eraser'?'cell':tool==='pan'?'grab':'crosshair';
+      drawCanvas.style.cursor=c;
+    });
+  });
+
+  // ── Color / stroke / opacity ──
+  colorSwatch.addEventListener('click', function(){ colorInput.click(); });
+  colorInput.addEventListener('input', function(e){ color=e.target.value; colorSwatch.style.background=color; });
+  strokeSlider.addEventListener('input', function(e){ strokeWidth=parseInt(e.target.value); strokeValEl.textContent=strokeWidth; });
+  opacitySlider.addEventListener('input', function(e){ opacity=parseInt(e.target.value)/100; opacityValEl.textContent=e.target.value+'%'; });
+
+  // ── Page nav + save ──
+  btnPrev.addEventListener('click', function(){ changePage(-1); });
+  btnNext.addEventListener('click', function(){ changePage(1); });
+  saveBtnEl.addEventListener('click', saveImage);
+  btnUndo.addEventListener('click', undoFn);
+  btnRedo.addEventListener('click', redoFn);
+  btnClear.addEventListener('click', clearFn);
 
   // ── Drawing ──
   function onDown(e){
     if(!baseImageData) return;
-    if(tool === 'text'){ handleText(e); return; }
+    if(pinching) return;
+    if(tool==='pan'){ startPan(e.touches?e.touches[0].clientX:e.clientX, e.touches?e.touches[0].clientY:e.clientY); return; }
+    if(spaceDown) return;
+    if(tool==='text'){ handleText(e); return; }
+    if(e.touches && e.touches.length>1) return;
     e.preventDefault();
-    drawing = true;
-    var p = getPos(e);
-    startX = p.x; startY = p.y;
-    savedSnap = dCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
-    if(tool === 'pen' || tool === 'eraser'){
-      dCtx.beginPath();
-      dCtx.moveTo(startX, startY);
-    }
+    drawing=true;
+    var p=getPos(e); startX=p.x; startY=p.y;
+    savedSnap=dCtx.getImageData(0,0,drawCanvas.width,drawCanvas.height);
+    if(tool==='pen'||tool==='eraser'){ dCtx.beginPath(); dCtx.moveTo(startX,startY); }
   }
 
   function onMove(e){
     if(!drawing) return;
+    if(pinching) return;
+    if(e.touches && e.touches.length>1){ drawing=false; return; }
     e.preventDefault();
-    var p = getPos(e);
-    var x = p.x, y = p.y;
-    if(tool === 'pen'){
-      dCtx.globalAlpha = opacity;
-      dCtx.strokeStyle = color;
-      dCtx.lineWidth = strokeWidth;
-      dCtx.lineCap = 'round';
-      dCtx.lineJoin = 'round';
-      dCtx.lineTo(x, y);
-      dCtx.stroke();
-    } else if(tool === 'eraser'){
-      dCtx.save();
-      dCtx.globalCompositeOperation = 'destination-out';
-      dCtx.lineWidth = strokeWidth * 4;
-      dCtx.lineCap = 'round';
-      dCtx.lineTo(x, y);
-      dCtx.stroke();
-      dCtx.restore();
+    var p=getPos(e); var x=p.x,y=p.y;
+    if(tool==='pen'){
+      dCtx.globalAlpha=opacity; dCtx.strokeStyle=color; dCtx.lineWidth=strokeWidth;
+      dCtx.lineCap='round'; dCtx.lineJoin='round';
+      dCtx.lineTo(x,y); dCtx.stroke();
+    } else if(tool==='eraser'){
+      dCtx.save(); dCtx.globalCompositeOperation='destination-out';
+      dCtx.lineWidth=strokeWidth*4; dCtx.lineCap='round';
+      dCtx.lineTo(x,y); dCtx.stroke(); dCtx.restore();
     } else {
-      dCtx.putImageData(savedSnap, 0, 0);
-      drawShape(startX, startY, x, y);
+      dCtx.putImageData(savedSnap,0,0);
+      drawShape(startX,startY,x,y);
     }
   }
 
   function onUp(e){
     if(!drawing) return;
-    drawing = false;
-    if(tool !== 'pen' && tool !== 'eraser' && tool !== 'text'){
-      var p = getPos(e);
-      dCtx.putImageData(savedSnap, 0, 0);
-      drawShape(startX, startY, p.x, p.y);
+    drawing=false;
+    if(tool!=='pen'&&tool!=='eraser'&&tool!=='text'){
+      var p=getPos(e);
+      dCtx.putImageData(savedSnap,0,0);
+      drawShape(startX,startY,p.x,p.y);
     }
     pushUndo();
   }
 
-  function drawShape(x1, y1, x2, y2){
-    dCtx.globalAlpha = opacity;
-    dCtx.strokeStyle = color;
-    dCtx.lineWidth = strokeWidth;
-    dCtx.lineCap = 'round';
-    dCtx.lineJoin = 'round';
+  function drawShape(x1,y1,x2,y2){
+    dCtx.globalAlpha=opacity; dCtx.strokeStyle=color;
+    dCtx.lineWidth=strokeWidth; dCtx.lineCap='round'; dCtx.lineJoin='round';
     dCtx.beginPath();
-    if(tool === 'line'){
+    if(tool==='line'){
       dCtx.moveTo(x1,y1); dCtx.lineTo(x2,y2); dCtx.stroke();
-    } else if(tool === 'rect'){
-      dCtx.strokeRect(x1, y1, x2-x1, y2-y1);
-    } else if(tool === 'ellipse'){
-      var rx = Math.abs(x2-x1)/2, ry = Math.abs(y2-y1)/2;
+    } else if(tool==='rect'){
+      dCtx.strokeRect(x1,y1,x2-x1,y2-y1);
+    } else if(tool==='ellipse'){
+      var rx=Math.abs(x2-x1)/2,ry=Math.abs(y2-y1)/2;
       dCtx.ellipse((x1+x2)/2,(y1+y2)/2,Math.max(rx,1),Math.max(ry,1),0,0,Math.PI*2);
       dCtx.stroke();
-    } else if(tool === 'arrow'){
-      var angle = Math.atan2(y2-y1, x2-x1);
-      var hw = Math.max(strokeWidth*3, 12);
+    } else if(tool==='arrow'){
+      var ang=Math.atan2(y2-y1,x2-x1),hw=Math.max(strokeWidth*3,12);
       dCtx.moveTo(x1,y1); dCtx.lineTo(x2,y2); dCtx.stroke();
       dCtx.beginPath();
-      dCtx.moveTo(x2,y2);
-      dCtx.lineTo(x2 - hw*Math.cos(angle-Math.PI/6), y2 - hw*Math.sin(angle-Math.PI/6));
-      dCtx.moveTo(x2,y2);
-      dCtx.lineTo(x2 - hw*Math.cos(angle+Math.PI/6), y2 - hw*Math.sin(angle+Math.PI/6));
+      dCtx.moveTo(x2,y2); dCtx.lineTo(x2-hw*Math.cos(ang-Math.PI/6),y2-hw*Math.sin(ang-Math.PI/6));
+      dCtx.moveTo(x2,y2); dCtx.lineTo(x2-hw*Math.cos(ang+Math.PI/6),y2-hw*Math.sin(ang+Math.PI/6));
       dCtx.stroke();
     }
-    dCtx.globalAlpha = 1;
+    dCtx.globalAlpha=1;
   }
 
-  // ── Touch events ──
   drawCanvas.addEventListener('mousedown', onDown);
   drawCanvas.addEventListener('mousemove', onMove);
-  drawCanvas.addEventListener('mouseup', onUp);
-  drawCanvas.addEventListener('mouseleave', onUp);
-  drawCanvas.addEventListener('touchstart', onDown, {passive:false});
-  drawCanvas.addEventListener('touchmove',  onMove, {passive:false});
-  drawCanvas.addEventListener('touchend',   onUp,   {passive:false});
+  drawCanvas.addEventListener('mouseup',   onUp);
+  drawCanvas.addEventListener('mouseleave',onUp);
+  drawCanvas.addEventListener('touchstart',onDown,{passive:false});
+  drawCanvas.addEventListener('touchmove', onMove,{passive:false});
+  drawCanvas.addEventListener('touchend',  onUp,  {passive:false});
 
-  // ── Text tool ──
+  // ── Text ──
   function handleText(e){
-    var p = getPos(e.touches ? e : e);
+    var p=getPos(e.touches?e:e);
     commitText();
-    textX = p.x; textY = p.y;
-    var rect = drawCanvas.getBoundingClientRect();
-    var sx = rect.width / drawCanvas.width;
-    var sy = rect.height / drawCanvas.height;
-    var wrapRect = canvasWrap.getBoundingClientRect();
-    textOverlay.style.display = 'block';
-    textOverlay.style.left   = (rect.left - wrapRect.left + textX * sx) + 'px';
-    textOverlay.style.top    = (rect.top  - wrapRect.top  + textY * sy - FONT_SIZE * sy) + 'px';
-    textOverlay.style.fontSize = (FONT_SIZE * sy) + 'px';
-    textOverlay.style.color  = color;
-    textOverlay.style.opacity= opacity;
-    textOverlay.value = '';
+    textX=p.x; textY=p.y;
+    // position overlay on screen
+    var rect=viewport.getBoundingClientRect();
+    var sx=rect.left + panX + textX*zoom;
+    var sy=rect.top  + panY + textY*zoom;
+    var wrapRect=canvasWrap.getBoundingClientRect();
+    textOverlay.style.display='block';
+    textOverlay.style.left=(sx - wrapRect.left*0 + (textX*zoom + panX) - panX )+'px';
+    // simpler: position relative to canvasWrap
+    textOverlay.style.left=(textX*zoom)+'px';
+    textOverlay.style.top =(textY*zoom - FONT_SIZE*zoom)+'px';
+    textOverlay.style.fontSize=(FONT_SIZE*zoom)+'px';
+    textOverlay.style.color=color;
+    textOverlay.style.opacity=opacity;
+    textOverlay.value='';
     textOverlay.focus();
   }
 
   textOverlay.addEventListener('keydown', function(e){
-    if(e.key === 'Escape'){ textOverlay.style.display='none'; return; }
-    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); commitText(); }
+    if(e.key==='Escape'){ textOverlay.style.display='none'; return; }
+    if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); commitText(); }
   });
 
   function commitText(){
-    if(textOverlay.style.display === 'none') return;
-    var val = textOverlay.value.trim();
-    textOverlay.style.display = 'none';
+    if(textOverlay.style.display==='none') return;
+    var val=textOverlay.value.trim();
+    textOverlay.style.display='none';
     if(!val) return;
-    dCtx.globalAlpha = opacity;
-    dCtx.fillStyle = color;
-    dCtx.font = FONT_SIZE + "px 'Segoe UI', system-ui, sans-serif";
-    val.split('\n').forEach(function(line, i){
-      dCtx.fillText(line, textX, textY + i * FONT_SIZE * 1.3);
-    });
-    dCtx.globalAlpha = 1;
+    dCtx.globalAlpha=opacity; dCtx.fillStyle=color;
+    dCtx.font=FONT_SIZE+"px 'Segoe UI',system-ui,sans-serif";
+    val.split('\n').forEach(function(line,i){ dCtx.fillText(line,textX,textY+i*FONT_SIZE*1.3); });
+    dCtx.globalAlpha=1;
     pushUndo();
   }
 
-  // ── Undo / Redo ──
-  function pushUndo(){
-    undoStack.push(dCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
-    if(undoStack.length > 40) undoStack.shift();
-    redoStack = [];
-  }
-  function undoFn(){
-    if(!undoStack.length) return;
-    redoStack.push(dCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
-    dCtx.putImageData(undoStack.pop(), 0, 0);
-  }
-  function redoFn(){
-    if(!redoStack.length) return;
-    undoStack.push(dCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
-    dCtx.putImageData(redoStack.pop(), 0, 0);
-  }
-  function clearFn(){
-    if(!baseImageData) return;
-    pushUndo();
-    dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-  }
+  // ── Undo / Redo / Clear ──
+  function pushUndo(){ undoStack.push(dCtx.getImageData(0,0,drawCanvas.width,drawCanvas.height)); if(undoStack.length>40) undoStack.shift(); redoStack=[]; }
+  function undoFn(){ if(!undoStack.length) return; redoStack.push(dCtx.getImageData(0,0,drawCanvas.width,drawCanvas.height)); dCtx.putImageData(undoStack.pop(),0,0); }
+  function redoFn(){ if(!redoStack.length) return; undoStack.push(dCtx.getImageData(0,0,drawCanvas.width,drawCanvas.height)); dCtx.putImageData(redoStack.pop(),0,0); }
+  function clearFn(){ if(!baseImageData) return; pushUndo(); dCtx.clearRect(0,0,drawCanvas.width,drawCanvas.height); }
 
   // ── Save ──
   function saveImage(){
-    var out = document.createElement('canvas');
-    out.width  = baseCanvas.width;
-    out.height = baseCanvas.height;
-    var ctx = out.getContext('2d');
-    ctx.drawImage(baseCanvas, 0, 0);
-    ctx.drawImage(drawCanvas, 0, 0);
-    var a = document.createElement('a');
-    a.download = 'annotated.png';
-    a.href = out.toDataURL('image/png');
-    a.click();
+    var out=document.createElement('canvas');
+    out.width=baseCanvas.width; out.height=baseCanvas.height;
+    var ctx=out.getContext('2d');
+    ctx.drawImage(baseCanvas,0,0); ctx.drawImage(drawCanvas,0,0);
+    var a=document.createElement('a');
+    a.download='annotated.png'; a.href=out.toDataURL('image/png'); a.click();
   }
 
-  // ── Keyboard shortcuts ──
+  // ── Keyboard ──
   document.addEventListener('keydown', function(e){
-    if(e.target === textOverlay) return;
-    if(e.ctrlKey || e.metaKey){
-      if(e.key === 'z'){ e.preventDefault(); e.shiftKey ? redoFn() : undoFn(); return; }
-      if(e.key === 'y'){ e.preventDefault(); redoFn(); return; }
-      if(e.key === 's'){ e.preventDefault(); saveImage(); return; }
+    if(e.target===textOverlay) return;
+    if(e.ctrlKey||e.metaKey){
+      if(e.key==='z'){ e.preventDefault(); e.shiftKey?redoFn():undoFn(); return; }
+      if(e.key==='y'){ e.preventDefault(); redoFn(); return; }
+      if(e.key==='s'){ e.preventDefault(); saveImage(); return; }
+      if(e.key==='0'){ e.preventDefault(); fitToViewport(); return; }
     }
-    var map = {p:'pen',l:'line',a:'arrow',r:'rect',e:'ellipse',t:'text',x:'eraser'};
-    if(map[e.key]){
-      var btn = document.querySelector('.tool-btn[data-tool="'+map[e.key]+'"]');
-      if(btn) btn.click();
-    }
+    if(e.code==='Space'&&e.target===document.body){ e.preventDefault(); spaceDown=true; viewport.style.cursor='grab'; showHint(); return; }
+    var map={p:'pen',l:'line',a:'arrow',r:'rect',e:'ellipse',t:'text',x:'eraser',h:'pan'};
+    if(map[e.key]){ var b=document.querySelector('.tool-btn[data-tool="'+map[e.key]+'"]'); if(b) b.click(); }
+  });
+  document.addEventListener('keyup', function(e){
+    if(e.code==='Space'){ spaceDown=false; viewport.style.cursor=''; hideHint(); }
   });
 
-  // ── Init PDF.js worker lazily ──
-  if(typeof pdfjsLib !== 'undefined'){
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  // ── Init PDF.js ──
+  if(typeof pdfjsLib!=='undefined'){
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 
 })();
