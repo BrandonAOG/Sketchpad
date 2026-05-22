@@ -192,6 +192,20 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 #font-size-sel:focus{border-color:var(--acc)}
 /* SELECTION OVERLAY CANVAS */
 #sel-cv{position:absolute;top:0;left:0;display:block;pointer-events:none;z-index:2}
+
+/* SAVE INDICATOR */
+#save-indicator{
+  width:8px;height:8px;border-radius:50%;
+  background:#10b981;box-shadow:0 0 6px #10b981;
+  flex-shrink:0;transition:all .3s;
+}
+#save-indicator.saving{
+  background:#FBBF24;box-shadow:0 0 8px #FBBF24;
+  animation:savePulse .6s ease-in-out infinite;
+}
+#save-indicator.unsaved{background:#f59e0b;box-shadow:0 0 6px #f59e0b;animation:none}
+#save-indicator.error  {background:#ef4444;box-shadow:0 0 6px #ef4444;animation:none}
+@keyframes savePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.6)}}
 /* TOAST NOTIFICATION */
 #toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
   background:var(--surf);border:1px solid var(--b2);border-radius:8px;
@@ -344,6 +358,7 @@ body{display:flex;flex-direction:column;}
   </div>
 
   <!-- Right: online status -->
+  <div id="save-indicator" title="Auto-save status"></div>
   <div class="aog-nav-right">
     <span class="aog-status-dot" id="aog-dot"></span>
     <span id="aog-net-lbl">Online</span>
@@ -582,6 +597,18 @@ body{display:flex;flex-direction:column;}
   <div style="text-align:center"><span id="pb-scale" style="font-size:9pt"></span></div>
   <div style="text-align:right;font-size:9pt;color:#555"><span id="pb-date"></span></div>
 </div>
+
+<!-- AUTO-SAVE RESTORE DIALOG -->
+<div id="restore-overlay" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);align-items:center;justify-content:center"></div>
+<div id="restore-dlg" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:301;background:var(--surf);border:1.5px solid #FBBF24;border-radius:12px;padding:22px 24px;min-width:300px;max-width:90vw;box-shadow:0 0 40px rgba(251,191,36,0.3)">
+  <div style="font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;letter-spacing:3px;color:#FBBF24;margin-bottom:6px;text-transform:uppercase">⚡ Unsaved Session Found</div>
+  <div id="restore-meta" style="font-size:11px;color:var(--txt2);margin-bottom:16px;line-height:1.8"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button id="restore-discard" class="dlg-btn sec">Discard</button>
+    <button id="restore-yes" class="dlg-btn primary" style="background:linear-gradient(135deg,#FBBF24,#F97316);color:#0a0e27">⚡ Restore</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- SHORTCUTS OVERLAY -->
@@ -639,7 +666,7 @@ var IS_IPAD   = /iPad/.test(navigator.userAgent) ||
 var IS_IOS    = IS_IPHONE || IS_IPAD;
 // 2400px on iPhone = good zoom quality, keeps 5 layers ~33MB each (~165MB total).
 // iPad gets no cap (16384 = effectively unlimited).
-var IOS_MAX_PX = IS_IPHONE ? 2900 : 16384;
+var IOS_MAX_PX = IS_IPHONE ? 2800 : 16384;
 var MAX_UNDO   = IS_IPHONE ? 8 : (IS_IPAD ? 15 : 25);
 
 // releaseCanvas: forces Safari to free canvas memory immediately.
@@ -801,6 +828,7 @@ function pushUndo(){
     undoStack.push(snap);
     if(undoStack.length>MAX_UNDO) undoStack.shift();
     redoStack=[];
+    scheduleSave(); // auto-save after every operation
   }catch(ex){ console.warn('pushUndo failed:',ex); }
 }
 
@@ -1036,6 +1064,7 @@ function afterLoad(){
   drawGrid();
   fitToVP();
   toast('File loaded — '+(IS_IPHONE?'iPhone cap applied':'ready to annotate'),'ok',2000);
+  clearSave(); scheduleSave(); // start fresh save for this file
 }
 
 function pgGrp(show){
@@ -1972,6 +2001,220 @@ btnPrint.addEventListener('click',function(){
   pw.document.write('</body></html>');
   pw.document.close();
 });
+
+
+// ══════════════════════════════════════════════════════════════
+// AUTO-SAVE ENGINE — IndexedDB
+// Saves after every operation. Survives page crashes, iOS kills,
+// Safari background termination. Restores on next open.
+// ══════════════════════════════════════════════════════════════
+
+var SAVE_DB_NAME    = 'aog_annotator_v1';
+var SAVE_STORE      = 'autosave';
+var SAVE_DEBOUNCE   = 2500; // ms after last change before saving
+var _saveDb         = null;
+var _saveTimer      = null;
+var _saveIndicator  = document.getElementById('save-indicator');
+var _lastSaveTime   = 0;
+
+function setSaveStatus(status){ // 'saving' | 'saved' | 'unsaved' | 'error'
+  if(!_saveIndicator) return;
+  _saveIndicator.className = status;
+  _saveIndicator.title = {
+    saving:  'Saving…',
+    saved:   'All changes saved',
+    unsaved: 'Unsaved changes',
+    error:   'Auto-save unavailable'
+  }[status] || '';
+}
+
+// Open / init IndexedDB
+function initSaveDB(cb){
+  try{
+    var req=indexedDB.open(SAVE_DB_NAME,1);
+    req.onupgradeneeded=function(e){
+      e.target.result.createObjectStore(SAVE_STORE,{keyPath:'id'});
+    };
+    req.onsuccess=function(e){
+      _saveDb=e.target.result;
+      if(cb) cb();
+    };
+    req.onerror=function(){ setSaveStatus('error'); console.warn('[Save] IndexedDB unavailable'); };
+  }catch(ex){ setSaveStatus('error'); }
+}
+
+// Perform the save
+function doSave(){
+  if(!baseLoaded||!_saveDb) return;
+  setSaveStatus('saving');
+  // Use setTimeout to push heavy toDataURL off the main thread tick
+  setTimeout(function(){
+    try{
+      // Capture base image as JPEG (smaller)
+      var baseData = baseCv.toDataURL('image/jpeg', IS_IPHONE ? 0.75 : 0.85);
+      // Capture each layer as PNG (lossless so drawings stay crisp)
+      var layerData = layers.map(function(l){
+        return {
+          name:    l.name,
+          color:   l.color,
+          visible: l.visible,
+          data:    l.canvas.toDataURL('image/png')
+        };
+      });
+      var record = {
+        id:             'session',
+        ts:             Date.now(),
+        baseData:       baseData,
+        layers:         layerData,
+        activeLayerIdx: activeLayerIdx,
+        scaleSet:       scaleSet,
+        ppu:            ppu,
+        scaleUnit:      scaleUnit,
+        gridEnabled:    gridEnabled,
+        gridSize:       gridSize
+      };
+      var tx=_saveDb.transaction(SAVE_STORE,'readwrite');
+      var req=tx.objectStore(SAVE_STORE).put(record);
+      req.onsuccess=function(){ _lastSaveTime=Date.now(); setSaveStatus('saved'); };
+      req.onerror  =function(){ setSaveStatus('error'); };
+    }catch(ex){ setSaveStatus('error'); console.warn('[Save] Failed:',ex); }
+  },0);
+}
+
+// Schedule a debounced save after any change
+function scheduleSave(){
+  setSaveStatus('unsaved');
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(doSave, SAVE_DEBOUNCE);
+}
+
+// Clear saved session (call after user explicitly exports)
+function clearSave(){
+  if(!_saveDb) return;
+  try{
+    var tx=_saveDb.transaction(SAVE_STORE,'readwrite');
+    tx.objectStore(SAVE_STORE).delete('session');
+    setSaveStatus('saved');
+  }catch(ex){}
+}
+
+// ── RESTORE ──────────────────────────────────────────────────
+function checkForSavedSession(){
+  if(!_saveDb) return;
+  try{
+    var tx  = _saveDb.transaction(SAVE_STORE,'readonly');
+    var req = tx.objectStore(SAVE_STORE).get('session');
+    req.onsuccess=function(e){
+      var rec=e.target.result;
+      if(!rec||!rec.baseData) return;
+      var ago=Date.now()-rec.ts;
+      var agoStr = ago<60000  ? 'Saved moments ago' :
+                   ago<3600000? 'Saved '+Math.round(ago/60000)+' min ago' :
+                   ago<86400000?'Saved '+Math.round(ago/3600000)+' hrs ago' :
+                                'Saved '+Math.round(ago/86400000)+' day(s) ago';
+      var nLayers=rec.layers?rec.layers.length:0;
+      document.getElementById('restore-meta').innerHTML=
+        agoStr+'<br>'+nLayers+' layer'+(nLayers!==1?'s':'')+' · '+
+        (rec.scaleSet?'Scale: 1px='+rec.ppu.toFixed(4)+rec.scaleUnit:'No scale set');
+      var overlay=document.getElementById('restore-overlay');
+      var dlg    =document.getElementById('restore-dlg');
+      overlay.style.display='flex';
+      dlg.style.display='block';
+    };
+  }catch(ex){ console.warn('[Save] checkForSavedSession failed:',ex); }
+}
+
+function doRestore(rec){
+  var img=new Image();
+  img.onload=function(){
+    var scale=Math.min(1,IOS_MAX_PX/Math.max(img.width,img.height));
+    var w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+    resize(w,h);
+    bCtx.drawImage(img,0,0,w,h);
+
+    // Restore layers
+    if(rec.layers&&rec.layers.length){
+      // Release old canvases
+      if(layers.length) layers.forEach(function(l){ releaseCanvas(l.canvas); });
+      layers=[];
+      var pending=rec.layers.length;
+      rec.layers.forEach(function(ld,i){
+        var c=document.createElement('canvas'); c.width=w; c.height=h;
+        var lc=c.getContext('2d');
+        var li=new Image();
+        li.onload=function(){
+          lc.drawImage(li,0,0,w,h);
+          layers[i]={name:ld.name,color:ld.color,visible:ld.visible,canvas:c,ctx:lc};
+          pending--;
+          if(pending===0){
+            // All layers loaded
+            activeLayerIdx=Math.min(rec.activeLayerIdx||0,layers.length-1);
+            // Restore scale
+            if(rec.scaleSet){ scaleSet=true; ppu=rec.ppu; scaleUnit=rec.scaleUnit;
+              ppuIn.value=(1/ppu).toFixed(4); unitIn.value=scaleUnit;
+              scaleStatus.textContent='1 px = '+(1/ppu).toFixed(4)+' '+scaleUnit; }
+            // Restore grid
+            if(rec.gridEnabled){ gridEnabled=true; gridSize=rec.gridSize||50;
+              gridSz.value=gridSize; togGrid.classList.add('on'); btnGrid.classList.add('active'); }
+            undoStack=[]; redoStack=[];
+            baseLoaded=true;
+            dropZone.classList.add('hidden');
+            document.getElementById('compass').style.display='block';
+            canvasWrap.style.display='inline-block';
+            subbar.classList.add('vis');
+            pgGrp(false);
+            drawGrid(); renderLayers(); composite(); fitToVP();
+            setSaveStatus('saved');
+            toast('Session restored ✓','ok',3000);
+          }
+        };
+        li.onerror=function(){
+          layers[i]={name:ld.name,color:ld.color,visible:ld.visible,canvas:c,ctx:lc};
+          pending--;
+          if(pending===0){ composite(); renderLayers(); }
+        };
+        li.src=ld.data;
+      });
+    } else {
+      afterLoad();
+    }
+  };
+  img.onerror=function(){ toast('Could not restore session image.','err'); };
+  img.src=rec.baseData;
+}
+
+// Wire restore dialog buttons
+document.getElementById('restore-yes').addEventListener('click',function(){
+  var overlay=document.getElementById('restore-overlay');
+  var dlg    =document.getElementById('restore-dlg');
+  overlay.style.display='none'; dlg.style.display='none';
+  // Fetch and restore
+  try{
+    var tx=_saveDb.transaction(SAVE_STORE,'readonly');
+    var req=tx.objectStore(SAVE_STORE).get('session');
+    req.onsuccess=function(e){ if(e.target.result) doRestore(e.target.result); };
+  }catch(ex){ toast('Restore failed: '+ex.message,'err'); }
+});
+
+document.getElementById('restore-discard').addEventListener('click',function(){
+  document.getElementById('restore-overlay').style.display='none';
+  document.getElementById('restore-dlg').style.display='none';
+  clearSave();
+  toast('Previous session discarded','',2000);
+});
+
+document.getElementById('restore-overlay').addEventListener('click',function(){
+  // Click overlay = discard (same as discard button)
+  document.getElementById('restore-overlay').style.display='none';
+  document.getElementById('restore-dlg').style.display='none';
+});
+
+// Init DB then check for saved session
+initSaveDB(checkForSavedSession);
+
+// ══════════════════════════════════════════════════════════════
+// END AUTO-SAVE ENGINE
+// ══════════════════════════════════════════════════════════════
 
 // ── KEYBOARD ──
 document.addEventListener('keydown',function(e){
