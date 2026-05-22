@@ -666,7 +666,7 @@ var IS_IPAD   = /iPad/.test(navigator.userAgent) ||
 var IS_IOS    = IS_IPHONE || IS_IPAD;
 // 2400px on iPhone = good zoom quality, keeps 5 layers ~33MB each (~165MB total).
 // iPad gets no cap (16384 = effectively unlimited).
-var IOS_MAX_PX = IS_IPHONE ? 2800 : 16384;
+var IOS_MAX_PX = IS_IPHONE ? 2900 : 16384;
 var MAX_UNDO   = IS_IPHONE ? 8 : (IS_IPAD ? 15 : 25);
 
 // releaseCanvas: forces Safari to free canvas memory immediately.
@@ -2011,7 +2011,7 @@ btnPrint.addEventListener('click',function(){
 
 var SAVE_DB_NAME    = 'aog_annotator_v1';
 var SAVE_STORE      = 'autosave';
-var SAVE_DEBOUNCE   = 2500; // ms after last change before saving
+var SAVE_DEBOUNCE   = IS_IPHONE ? 5000 : 2500; // longer on iPhone — gives iOS time to free memory after drawing
 var _saveDb         = null;
 var _saveTimer      = null;
 var _saveIndicator  = document.getElementById('save-indicator');
@@ -2043,42 +2043,73 @@ function initSaveDB(cb){
   }catch(ex){ setSaveStatus('error'); }
 }
 
-// Perform the save
+// Perform the save — layers are encoded ONE AT A TIME with a gap between each.
+// Encoding all 5 canvases at once creates a ~165MB memory spike on iPhone
+// which combined with zoom overhead pushes past the iOS WebKit limit and crashes.
+// Sequential encoding with 150ms gaps lets iOS free the previous buffer first.
+var LAYER_SAVE_GAP = IS_IPHONE ? 150 : 20; // ms between layer encodes
+var JPEG_QUALITY   = IS_IPHONE ? 0.80 : 0.88; // JPEG for session saves (lossless only for export)
+
 function doSave(){
   if(!baseLoaded||!_saveDb) return;
+  // Don't save while user is actively drawing or pinching (memory already high)
+  if(drawing||pinching) { scheduleSave(); return; }
   setSaveStatus('saving');
-  // Use setTimeout to push heavy toDataURL off the main thread tick
+
+  var record = {
+    id:             'session',
+    ts:             Date.now(),
+    baseData:       null,
+    layers:         [],
+    activeLayerIdx: activeLayerIdx,
+    scaleSet:       scaleSet,
+    ppu:            ppu,
+    scaleUnit:      scaleUnit,
+    gridEnabled:    gridEnabled,
+    gridSize:       gridSize
+  };
+
+  // Step 1: encode base image
+  setTimeout(function(){
+    try{ record.baseData = baseCv.toDataURL('image/jpeg', JPEG_QUALITY); }
+    catch(ex){ setSaveStatus('error'); return; }
+    // Step 2: encode each layer sequentially
+    encodeLayerSequential(0, record);
+  }, 50);
+}
+
+function encodeLayerSequential(i, record){
+  if(i >= layers.length){
+    // All layers encoded — write to IndexedDB
+    writeSessionRecord(record);
+    return;
+  }
   setTimeout(function(){
     try{
-      // Capture base image as JPEG (smaller)
-      var baseData = baseCv.toDataURL('image/jpeg', IS_IPHONE ? 0.75 : 0.85);
-      // Capture each layer as PNG (lossless so drawings stay crisp)
-      var layerData = layers.map(function(l){
-        return {
-          name:    l.name,
-          color:   l.color,
-          visible: l.visible,
-          data:    l.canvas.toDataURL('image/png')
-        };
+      // JPEG for session saves: far less memory than PNG during encoding.
+      // Drawings restore perfectly at 0.88 quality. Final exports always use PNG.
+      record.layers.push({
+        name:    layers[i].name,
+        color:   layers[i].color,
+        visible: layers[i].visible,
+        data:    layers[i].canvas.toDataURL('image/jpeg', JPEG_QUALITY)
       });
-      var record = {
-        id:             'session',
-        ts:             Date.now(),
-        baseData:       baseData,
-        layers:         layerData,
-        activeLayerIdx: activeLayerIdx,
-        scaleSet:       scaleSet,
-        ppu:            ppu,
-        scaleUnit:      scaleUnit,
-        gridEnabled:    gridEnabled,
-        gridSize:       gridSize
-      };
-      var tx=_saveDb.transaction(SAVE_STORE,'readwrite');
-      var req=tx.objectStore(SAVE_STORE).put(record);
-      req.onsuccess=function(){ _lastSaveTime=Date.now(); setSaveStatus('saved'); };
-      req.onerror  =function(){ setSaveStatus('error'); };
-    }catch(ex){ setSaveStatus('error'); console.warn('[Save] Failed:',ex); }
-  },0);
+    } catch(ex){
+      // If a layer fails to encode (memory), store empty and continue
+      record.layers.push({name:layers[i].name,color:layers[i].color,visible:layers[i].visible,data:''});
+      console.warn('[Save] Layer '+i+' encode failed:',ex);
+    }
+    encodeLayerSequential(i+1, record);
+  }, LAYER_SAVE_GAP);
+}
+
+function writeSessionRecord(record){
+  try{
+    var tx  = _saveDb.transaction(SAVE_STORE,'readwrite');
+    var req = tx.objectStore(SAVE_STORE).put(record);
+    req.onsuccess = function(){ _lastSaveTime=Date.now(); setSaveStatus('saved'); };
+    req.onerror   = function(){ setSaveStatus('error'); };
+  }catch(ex){ setSaveStatus('error'); console.warn('[Save] DB write failed:',ex); }
 }
 
 // Schedule a debounced save after any change
