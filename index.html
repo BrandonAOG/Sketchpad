@@ -276,53 +276,69 @@
     if(isPanning){ endPan(); viewport.style.cursor = (spaceDown||tool==='pan') ? 'grab' : ''; }
   });
 
-  // ── Touch pan & pinch (on viewport, outside draw canvas) ──
-  viewport.addEventListener('touchstart', function(e){
-    if(e.target === drawCanvas) return; // drawing handled separately
-    if(e.touches.length === 1 && tool === 'pan'){
-      startPan(e.touches[0].clientX, e.touches[0].clientY);
-    } else if(e.touches.length === 2){
+  // ── Unified two-finger pan + pinch zoom (fires on ANY element) ──
+  // We attach to document so two fingers on the drawCanvas also works.
+  var twoFingerMidX = 0, twoFingerMidY = 0;
+
+  document.addEventListener('touchstart', function(e){
+    if(e.touches.length === 2){
+      // Cancel any active single-finger draw
+      if(drawing){ drawing = false; if(savedSnap) dCtx.putImageData(savedSnap,0,0); }
+      isPanning = false;
       pinching = true;
-      pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      pinchDist0 = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
       pinchZoom0 = zoom;
-      pinchPanX0 = panX; pinchPanY0 = panY;
-      var midX = (e.touches[0].clientX + e.touches[1].clientX)/2;
-      var midY = (e.touches[0].clientY + e.touches[1].clientY)/2;
-      var rect = viewport.getBoundingClientRect();
-      lastPanX = midX - rect.left; lastPanY = midY - rect.top;
+      twoFingerMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      twoFingerMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
     }
   }, {passive:true});
 
-  viewport.addEventListener('touchmove', function(e){
-    if(e.target === drawCanvas && !pinching) return;
-    e.preventDefault();
-    if(pinching && e.touches.length === 2){
-      var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      var scale = dist / pinchDist0;
-      var newZoom = Math.max(0.05, Math.min(10, pinchZoom0 * scale));
-      var midX = (e.touches[0].clientX + e.touches[1].clientX)/2;
-      var midY = (e.touches[0].clientY + e.touches[1].clientY)/2;
+  document.addEventListener('touchmove', function(e){
+    if(e.touches.length === 2 && pinching){
+      e.preventDefault();
+      var t0 = e.touches[0], t1 = e.touches[1];
+      var midX = (t0.clientX + t1.clientX) / 2;
+      var midY = (t0.clientY + t1.clientY) / 2;
+      var dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+
+      // Pan from midpoint movement
+      panX += midX - twoFingerMidX;
+      panY += midY - twoFingerMidY;
+
+      // Zoom from pinch, anchored at midpoint
       var rect = viewport.getBoundingClientRect();
       var cx = midX - rect.left, cy = midY - rect.top;
+      var newZoom = Math.max(0.05, Math.min(10, pinchZoom0 * (dist / pinchDist0)));
       var ratio = newZoom / zoom;
-      panX = cx - ratio*(cx - panX);
-      panY = cy - ratio*(cy - panY);
+      panX = cx - ratio * (cx - panX);
+      panY = cy - ratio * (cy - panY);
       zoom = newZoom;
+
+      twoFingerMidX = midX;
+      twoFingerMidY = midY;
+      pinchZoom0 = zoom;
+      pinchDist0 = dist;
+
       clampPan(); applyTransform();
     } else if(isPanning && e.touches.length === 1){
       movePan(e.touches[0].clientX, e.touches[0].clientY);
     }
-  },{passive:false});
+  }, {passive:false});
 
-  viewport.addEventListener('touchend', function(e){
+  document.addEventListener('touchend', function(e){
     if(e.touches.length < 2) pinching = false;
     if(e.touches.length === 0) endPan();
-  },{passive:true});
+  }, {passive:true});
 
-  // two-finger pan on draw canvas too
-  drawCanvas.addEventListener('touchstart', function(e){
-    if(e.touches.length === 2){ pinching = true; /* handled by viewport listener */ }
-  },{passive:true});
+  // Single-finger pan on viewport background (pan tool or pan mode)
+  viewport.addEventListener('touchstart', function(e){
+    if(e.touches.length === 1 && !pinching && tool === 'pan'){
+      startPan(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, {passive:true});
 
   // ── Convert viewport coords → canvas coords ──
   function vpToCanvas(clientX, clientY){
