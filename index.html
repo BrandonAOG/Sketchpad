@@ -173,11 +173,46 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 #aog-nav{
   position:relative;z-index:20;
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 14px;height:48px;flex-shrink:0;
-  background:linear-gradient(90deg,#0A0E27,#0F1535);
+  padding:0 14px;height:62px;flex-shrink:0;
+  background:linear-gradient(90deg,#0A0E27 0%,#0F1535 50%,#0A0E27 100%);
   border-bottom:2px solid #FBBF24;
-  box-shadow:0 0 20px rgba(251,191,36,0.2);
+  box-shadow:0 0 24px rgba(251,191,36,0.25),0 2px 12px rgba(0,0,0,0.5);
 }
+/* Logo + name block */
+.aog-brand{
+  display:flex;align-items:center;gap:10px;
+  position:absolute;left:50%;transform:translateX(-50%);
+  pointer-events:none;
+}
+.aog-logo{
+  width:38px;height:38px;object-fit:contain;
+  filter:drop-shadow(0 0 8px rgba(251,191,36,0.55)) drop-shadow(0 0 16px rgba(249,115,22,0.35));
+  animation:aogLogoPulse 3s ease-in-out infinite;flex-shrink:0;
+}
+@keyframes aogLogoPulse{
+  0%,100%{filter:drop-shadow(0 0 8px rgba(251,191,36,0.55)) drop-shadow(0 0 16px rgba(249,115,22,0.35))}
+  50%{filter:drop-shadow(0 0 14px rgba(251,191,36,0.8)) drop-shadow(0 0 28px rgba(249,115,22,0.55))}
+}
+.aog-name-block{display:flex;flex-direction:column;align-items:flex-start;gap:1px;}
+.aog-company{
+  font-family:'Orbitron',monospace;font-size:0.78rem;font-weight:900;
+  letter-spacing:2.5px;text-transform:uppercase;line-height:1;
+  background:linear-gradient(135deg,#FBBF24 0%,#F97316 60%,#EA580C 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  white-space:nowrap;
+}
+.aog-tool{
+  font-family:'Share Tech Mono',monospace;font-size:0.55rem;
+  letter-spacing:3px;text-transform:uppercase;color:#00D4FF;
+  text-shadow:0 0 6px rgba(0,212,255,0.45);white-space:nowrap;
+}
+/* Hide name on very small screens, keep logo */
+@media(max-width:420px){
+  .aog-company{font-size:0.62rem;letter-spacing:1.5px;}
+  .aog-tool{display:none;}
+  .aog-logo{width:30px;height:30px;}
+}
+@media(max-width:340px){.aog-company{display:none;}}
 #aog-nav::after{
   content:'';position:absolute;bottom:-2px;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,#F97316,transparent);
@@ -250,11 +285,22 @@ body{display:flex;flex-direction:column;}
 
 <!-- AOG NAV BAR -->
 <nav id="aog-nav">
+  <!-- Left: back button -->
   <a class="aog-back" href="../" id="back-btn">
     <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-    Hub
+    Home
   </a>
-  <span class="aog-nav-title">Site Annotator</span>
+
+  <!-- Centre: logo + company name -->
+  <div class="aog-brand">
+    <img src="../logo.png" alt="Always On Generators" class="aog-logo">
+    <div class="aog-name-block">
+      <span class="aog-company">Always On Generators</span>
+      <span class="aog-tool">Site Plan Annotator</span>
+    </div>
+  </div>
+
+  <!-- Right: online status -->
   <div class="aog-nav-right">
     <span class="aog-status-dot" id="aog-dot"></span>
     <span id="aog-net-lbl">Online</span>
