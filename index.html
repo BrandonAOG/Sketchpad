@@ -134,7 +134,27 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 #pan-hint.show{opacity:1}
 /* MEASURE LABEL + POLY LABEL rendered on canvas - no HTML needed */
 /* TEXT OVERLAY */
-#text-ov{position:absolute;display:none;background:rgba(108,99,255,.1);border:1.5px solid var(--acc);border-radius:3px;padding:3px 6px;color:#fff;font-family:inherit;outline:none;resize:none;overflow:hidden;min-width:60px;min-height:24px;z-index:20;white-space:pre;touch-action:auto}
+#text-ov{
+  position:absolute;display:none;
+  /* No visible box — canvas draws the cursor indicator instead */
+  background:transparent;
+  border:none;
+  border-bottom:2px solid var(--acc); /* subtle underline only */
+  border-radius:0;
+  padding:2px 4px;
+  color:var(--txt);
+  caret-color:var(--acc);
+  font-family:'Segoe UI',system-ui,sans-serif;
+  outline:none;resize:none;overflow:hidden;
+  min-width:80px;min-height:24px;
+  z-index:25;white-space:pre;
+  /* CRITICAL: ≥16px prevents iOS Safari viewport auto-zoom on focus */
+  font-size:16px !important;
+  touch-action:manipulation;
+  transform-origin:top left;
+  /* Subtle selection highlight */
+  -webkit-user-select:text;user-select:text;
+}
 /* STAMP PICKER */
 #stamp-picker{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surf);border:1px solid var(--b2);border-radius:12px;padding:16px;z-index:100;display:none;min-width:260px}
 #stamp-picker h3{font-size:13px;color:var(--txt2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
@@ -490,7 +510,6 @@ body{display:flex;flex-direction:column;}
         <canvas id="draw-cv"></canvas>
         <canvas id="sel-cv"></canvas>
         <canvas id="grid-cv"></canvas>
-        <textarea id="text-ov" rows="1"></textarea>
       </div>
     </div>
     <svg id="compass" width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none">
@@ -499,6 +518,7 @@ body{display:flex;flex-direction:column;}
       <polygon points="22,40 18,22 22,26 26,22" fill="#fff" stroke="#fff" stroke-width="0.5"/>
       <text x="22" y="16" text-anchor="middle" font-size="7" fill="white" font-family="Arial" font-weight="bold">N</text>
     </svg>
+    <textarea id="text-ov" rows="1"></textarea>
     <div id="pan-hint">Hold <kbd style="background:#333;padding:1px 5px;border-radius:3px">Space</kbd> + drag to pan</div>
   </div>
 
@@ -667,7 +687,7 @@ var IS_IOS    = IS_IPHONE || IS_IPAD;
 // 2400px on iPhone = good zoom quality, keeps 5 layers ~33MB each (~165MB total).
 // iPad gets no cap (16384 = effectively unlimited).
 var IOS_MAX_PX = IS_IPHONE ? 2900 : 16384;
-var MAX_UNDO   = IS_IPHONE ? 8 : (IS_IPAD ? 15 : 25);
+var MAX_UNDO   = IS_IPHONE ? 5 : (IS_IPAD ? 12 : 25);
 
 // releaseCanvas: forces Safari to free canvas memory immediately.
 // Safari hoards canvases even after JS references are gone.
@@ -748,8 +768,8 @@ document.addEventListener('touchmove', function(e){
     if(e.target.closest('.panel-body')) return; // panel vertical scroll
     if(e.target.closest('#tb')) return;          // toolbar horizontal scroll
     if(e.target.closest('#sb')) return;          // subbar horizontal scroll
-    // Sliders need their own handler (below) — don't block here either
     if(e.target.closest('input[type=range]')) return;
+    if(e.target.closest('#text-ov')) return;     // text input — let iOS handle it
   }
   if(e.cancelable) e.preventDefault();
 },{passive:false});
@@ -821,10 +841,14 @@ function lctx(){ return layers[activeLayerIdx].ctx; }
 
 function pushUndo(){
   try{
-    var snap=layers.map(function(l){
-      if(!l.canvas.width||!l.canvas.height) return null;
-      return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height);
-    });
+    var lc=layers[activeLayerIdx];
+    if(!lc||!lc.canvas.width||!lc.canvas.height) return;
+    // Store only the ACTIVE layer's ImageData — 5× less memory than storing all layers.
+    // Each step: ~33MB instead of ~165MB. With MAX_UNDO=5 on iPhone: 165MB vs 825MB.
+    var snap={
+      idx:  activeLayerIdx,
+      data: lc.ctx.getImageData(0,0,lc.canvas.width,lc.canvas.height)
+    };
     undoStack.push(snap);
     if(undoStack.length>MAX_UNDO) undoStack.shift();
     redoStack=[];
@@ -833,31 +857,49 @@ function pushUndo(){
 }
 
 function applySnap(snap){
-  snap.forEach(function(d,i){ if(layers[i]&&d){ layers[i].ctx.clearRect(0,0,layers[i].canvas.width,layers[i].canvas.height); layers[i].ctx.putImageData(d,0,0); } });
+  // Legacy format (array) used by doRestore; new format (object) used by undo/redo
+  if(Array.isArray(snap)){
+    snap.forEach(function(d,i){ if(layers[i]&&d){ layers[i].ctx.clearRect(0,0,layers[i].canvas.width,layers[i].canvas.height); layers[i].ctx.putImageData(d,0,0); } });
+  } else if(snap&&snap.idx!=null&&snap.data){
+    var lc=layers[snap.idx];
+    if(lc){ lc.ctx.clearRect(0,0,lc.canvas.width,lc.canvas.height); lc.ctx.putImageData(snap.data,0,0); }
+  }
   composite();
 }
 
 function undoFn(){
   if(!undoStack.length) return;
   try{
-    redoStack.push(layers.map(function(l){
-      if(!l.canvas.width||!l.canvas.height) return null;
-      return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height);
-    }));
+    var snap=undoStack.pop();
+    var lc=layers[snap.idx];
+    if(!lc) return;
+    // Save current state of this layer to redo stack
+    redoStack.push({
+      idx:  snap.idx,
+      data: lc.ctx.getImageData(0,0,lc.canvas.width,lc.canvas.height)
+    });
     if(redoStack.length>MAX_UNDO) redoStack.shift();
-    applySnap(undoStack.pop());
+    // Restore
+    lc.ctx.clearRect(0,0,lc.canvas.width,lc.canvas.height);
+    lc.ctx.putImageData(snap.data,0,0);
+    composite();
   }catch(ex){ console.warn('undoFn failed:',ex); }
 }
 
 function redoFn(){
   if(!redoStack.length) return;
   try{
-    undoStack.push(layers.map(function(l){
-      if(!l.canvas.width||!l.canvas.height) return null;
-      return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height);
-    }));
+    var snap=redoStack.pop();
+    var lc=layers[snap.idx];
+    if(!lc) return;
+    undoStack.push({
+      idx:  snap.idx,
+      data: lc.ctx.getImageData(0,0,lc.canvas.width,lc.canvas.height)
+    });
     if(undoStack.length>MAX_UNDO) undoStack.shift();
-    applySnap(redoStack.pop());
+    lc.ctx.clearRect(0,0,lc.canvas.width,lc.canvas.height);
+    lc.ctx.putImageData(snap.data,0,0);
+    composite();
   }catch(ex){ console.warn('redoFn failed:',ex); }
 }
 
@@ -1048,8 +1090,10 @@ function renderPDFPage(n){
 }
 
 function resize(w,h){
-  baseCv.width=drawCv.width=gridCv.width=selCv.width=w;
-  baseCv.height=drawCv.height=gridCv.height=selCv.height=h;
+  baseCv.width=drawCv.width=gridCv.width=w;
+  baseCv.height=drawCv.height=gridCv.height=h;
+  // sel-cv stays 1×1 until a shape enters selection mode — saves ~33MB permanently
+  selCv.width=1; selCv.height=1;
   canvasWrap.style.width=w+'px'; canvasWrap.style.height=h+'px';
 }
 
@@ -1578,22 +1622,139 @@ function drawStamp(ctx,type,x,y,s){
   ctx.restore();
 }
 
+
+// ── TEXT CURSOR INDICATOR ────────────────────────────────────
+// Canvas-drawn blinking I-beam cursor so users see exactly
+// where text will be placed — no visible textarea box needed.
+var _txtCursorTimer  = null;
+var _txtCursorBlink  = false;
+var _txtCursorActive = false;
+var _txtCursorX      = 0;
+var _txtCursorY      = 0;
+var _txtHoverX       = 0;
+var _txtHoverY       = 0;
+
+function drawTextCursorAt(x, y, alpha){
+  var h   = FONT_SIZE * 1.25;           // cursor height in canvas px
+  var sw  = Math.max(1.5, 2/zoom);      // stroke width
+  var ss  = Math.max(4, 7/zoom);        // serif width
+  var col = color;
+
+  selCtx.save();
+  selCtx.globalAlpha = alpha;
+  selCtx.strokeStyle = col;
+  selCtx.lineWidth   = sw;
+  selCtx.lineCap     = 'round';
+  selCtx.shadowColor = col;
+  selCtx.shadowBlur  = 4/zoom;
+
+  // Vertical bar
+  selCtx.beginPath();
+  selCtx.moveTo(x, y - h);
+  selCtx.lineTo(x, y + 2/zoom);
+  selCtx.stroke();
+
+  // Top serif
+  selCtx.beginPath();
+  selCtx.moveTo(x - ss, y - h);
+  selCtx.lineTo(x + ss, y - h);
+  selCtx.stroke();
+
+  // Bottom serif
+  selCtx.beginPath();
+  selCtx.moveTo(x - ss, y + 2/zoom);
+  selCtx.lineTo(x + ss, y + 2/zoom);
+  selCtx.stroke();
+
+  selCtx.restore();
+}
+
+function renderTextCursorFrame(){
+  // Ensure sel-cv is canvas-sized
+  if(selCv.width !== drawCv.width || selCv.height !== drawCv.height){
+    selCv.width  = drawCv.width;
+    selCv.height = drawCv.height;
+  }
+  selCtx.clearRect(0,0,selCv.width,selCv.height);
+  if(_txtCursorActive && _txtCursorBlink){
+    drawTextCursorAt(_txtCursorX, _txtCursorY, 1.0);
+  }
+}
+
+function startTextCursor(x, y){
+  _txtCursorX      = x;
+  _txtCursorY      = y;
+  _txtCursorActive = true;
+  _txtCursorBlink  = true;
+  clearInterval(_txtCursorTimer);
+  _txtCursorTimer  = setInterval(function(){
+    _txtCursorBlink = !_txtCursorBlink;
+    renderTextCursorFrame();
+  }, 530);
+  renderTextCursorFrame();
+}
+
+function stopTextCursor(){
+  clearInterval(_txtCursorTimer);
+  _txtCursorTimer  = null;
+  _txtCursorActive = false;
+  _txtCursorBlink  = false;
+  if(selCv.width > 1){ selCv.width=1; selCv.height=1; }
+}
+
+// Hover indicator — faint cursor following mouse when text tool selected
+function showTextHover(x, y){
+  if(selCv.width !== drawCv.width || selCv.height !== drawCv.height){
+    selCv.width  = drawCv.width;
+    selCv.height = drawCv.height;
+  }
+  selCtx.clearRect(0,0,selCv.width,selCv.height);
+  drawTextCursorAt(x, y, 0.35);     // faint ghost cursor
+  // Small "T" label above
+  selCtx.save();
+  selCtx.globalAlpha = 0.45;
+  selCtx.font        = 'bold '+(Math.max(10,11/zoom))+'px Arial,sans-serif';
+  selCtx.fillStyle   = color;
+  selCtx.textAlign   = 'left';
+  selCtx.fillText('T', x + 8/zoom, y - FONT_SIZE*1.1);
+  selCtx.restore();
+}
+
+function clearTextHover(){
+  if(!_txtCursorActive && selCv.width > 1){ selCv.width=1; selCv.height=1; }
+}
+
+// ── END TEXT CURSOR INDICATOR ────────────────────────────────
+
 // ── TEXT TOOL ──
 function handleText(e){
   var p=getPos(e);
   textX=p.x; textY=p.y;
   commitText();
+  startTextCursor(p.x, p.y);
   showTextOverlay(p.x,p.y);
 }
 
 function showTextOverlay(cx,cy){
-  textOv.style.display='block';
-  textOv.style.left=(cx*zoom)+'px';
-  textOv.style.top=(cy*zoom-FONT_SIZE*zoom)+'px';
-  textOv.style.fontSize=(FONT_SIZE*zoom)+'px';
-  textOv.style.color=color;
-  textOv.style.opacity=opacity;
-  textOv.value=''; textOv.focus();
+  // cx,cy are in canvas coordinates. Convert to viewport coordinates:
+  var vr  = viewport.getBoundingClientRect();
+  var sx  = panX + cx * zoom - vr.left + viewport.offsetLeft;
+  var sy  = panY + cy * zoom - vr.top  + viewport.offsetTop;
+  // Visual font size on screen
+  var screenSize = FONT_SIZE * zoom;
+  // We set font-size to max(16,screenSize) to stop iOS Safari auto-zooming.
+  // If screenSize < 16, we use CSS scale() to shrink it visually.
+  var renderSize = Math.max(16, screenSize);
+  var scaleVal   = screenSize / renderSize;
+
+  textOv.style.display    = 'block';
+  textOv.style.left       = sx + 'px';
+  textOv.style.top        = (sy - screenSize) + 'px';
+  textOv.style.fontSize   = renderSize + 'px';
+  textOv.style.transform  = scaleVal < 1 ? 'scale('+scaleVal.toFixed(4)+')' : 'none';
+  textOv.style.color      = color;
+  textOv.style.opacity    = opacity;
+  textOv.value = ''; textOv.focus();
 }
 
 textOv.addEventListener('keydown',function(e){
@@ -1603,6 +1764,7 @@ textOv.addEventListener('keydown',function(e){
 
 function commitText(){
   if(textOv.style.display==='none') return;
+  stopTextCursor();              // clear canvas cursor indicator
   var val=textOv.value.trim(); textOv.style.display='none';
   if(!val) return;
   var lc=lctx();
@@ -1668,8 +1830,17 @@ function isInsideShape(s,x,y){
 }
 
 function renderSelection(){
+  if(!selectedShape){
+    // Shrink sel-cv back to 1×1 to free the ~33MB GPU buffer
+    if(selCv.width > 1){ selCv.width=1; selCv.height=1; }
+    return;
+  }
+  // Expand sel-cv to match canvas only when a shape is being transformed
+  if(selCv.width !== drawCv.width || selCv.height !== drawCv.height){
+    selCv.width  = drawCv.width;
+    selCv.height = drawCv.height;
+  }
   selCtx.clearRect(0,0,selCv.width,selCv.height);
-  if(!selectedShape) return;
   var s=selectedShape;
   var lw=1.5/zoom;
 
@@ -1777,13 +1948,14 @@ function commitSelection(){
   }
   lc.restore(); lc.globalAlpha=1; lc.setLineDash([]);
   selectedShape=null; selHandle=-1; selDragStart=null;
-  selCtx.clearRect(0,0,selCv.width,selCv.height);
+  // Shrink sel-cv back to 1×1 immediately to free the GPU buffer
+  selCv.width=1; selCv.height=1;
   composite(); pushUndo();
 }
 
 function cancelSelection(){
   selectedShape=null; selHandle=-1; selDragStart=null;
-  selCtx.clearRect(0,0,selCv.width,selCv.height);
+  selCv.width=1; selCv.height=1;
   composite();
 }
 
@@ -1800,7 +1972,13 @@ function updateSelCursor(x,y){
 
 // Override drawCv mousemove to update cursor when selection is active
 drawCv.addEventListener('mousemove',function(e){
-  if(selectedShape && selHandle===-1){ updateSelCursor(getPos(e).x,getPos(e).y); }
+  var p=getPos(e);
+  if(tool==='text' && !_txtCursorActive && baseLoaded){
+    showTextHover(p.x,p.y);
+  } else if(tool!=='text'){
+    clearTextHover();
+  }
+  if(selectedShape && selHandle===-1){ updateSelCursor(p.x,p.y); }
 },{passive:true});
 
 // ══════════════════════════════════════════════════════════════
@@ -1825,6 +2003,7 @@ document.querySelectorAll('.tb-btn[data-tool]').forEach(function(btn){
   btn.addEventListener('click',function(){
     if(tool==='polygon'&&polyActive){ closePolygon(); }
     commitText(); commitSelection(); leaderStep=0;
+    stopTextCursor(); clearTextHover();
     tool=btn.dataset.tool;
     document.querySelectorAll('.tb-btn[data-tool]').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
@@ -2258,6 +2437,7 @@ document.addEventListener('keydown',function(e){
   }
   if(e.code==='Space'&&e.target===document.body){ e.preventDefault(); spaceDown=true; viewport.style.cursor='grab'; showHint(); return; }
   if(e.key==='Escape'){
+    stopTextCursor(); clearTextHover();
     if(selectedShape){ commitSelection(); return; }
     if(tool==='polygon'&&polyActive){ closePolygon(); return; }
     leaderStep=0;
