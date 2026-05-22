@@ -169,6 +169,39 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
   .tb-btn{height:52px;min-width:42px}
 }
 /* labels always visible */
+
+
+/* SHORTCUTS OVERLAY */
+#shortcuts{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#shortcuts.show{display:flex}
+#shortcuts-box{background:var(--surf);border:1px solid var(--b2);border-radius:12px;padding:20px 24px;max-width:500px;width:90vw;max-height:80vh;overflow-y:auto}
+#shortcuts-box h2{font-size:13px;letter-spacing:3px;color:var(--acc2);text-transform:uppercase;margin-bottom:14px;font-family:'Segoe UI',sans-serif}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px}
+.sc-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
+.sc-key{font-family:'Courier New',monospace;font-size:11px;background:var(--surf2);border:1px solid var(--b2);border-radius:4px;padding:2px 6px;color:var(--txt2);white-space:nowrap}
+.sc-desc{font-size:11px;color:var(--txt2)}
+#shortcuts-close{margin-top:14px;width:100%;padding:8px;background:var(--acc);border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:1px}
+
+/* FONT SIZE SELECT */
+#font-size-sel{
+  background:var(--surf2);border:1.5px solid var(--b2);color:var(--txt);
+  border-radius:6px;padding:3px 4px;font-size:11px;outline:none;
+  cursor:pointer;flex-shrink:0;height:32px;width:52px;
+  -webkit-appearance:none;text-align:center;
+}
+#font-size-sel:focus{border-color:var(--acc)}
+/* SELECTION OVERLAY CANVAS */
+#sel-cv{position:absolute;top:0;left:0;display:block;pointer-events:none;z-index:2}
+/* TOAST NOTIFICATION */
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surf);border:1px solid var(--b2);border-radius:8px;
+  padding:10px 18px;font-size:12px;color:var(--txt);z-index:999;
+  opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);max-width:90vw;text-align:center;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.ok{border-color:#10b981;color:#6ee7b7;}
+#toast.warn{border-color:#f59e0b;color:#fcd34d;}
+#toast.err{border-color:#ef4444;color:#fca5a5;}
 /* PRINT */
 @media print{
   #tb,#sb,#main .side-panel,#pan-hint{display:none!important}
@@ -336,6 +369,15 @@ body{display:flex;flex-direction:column;}
   <button class="tb-btn" data-tool="leader"><svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="14" y2="10"/><polyline points="14 4 14 10 8 10"/></svg><span class="lbl">Leader</span></button>
   <button class="tb-btn" data-tool="stamp" id="stamp-tool-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20h16v-2a8 8 0 0 0-16 0v2z"/></svg><span class="lbl">Stamp</span></button>
   <button class="tb-btn" data-tool="text"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg><span class="lbl">Text</span></button>
+  <select id="font-size-sel" title="Font size">
+    <option value="10">10</option><option value="12">12</option>
+    <option value="14">14</option><option value="16">16</option>
+    <option value="18" selected>18</option><option value="20">20</option>
+    <option value="24">24</option><option value="28">28</option>
+    <option value="32">32</option><option value="36">36</option>
+    <option value="48">48</option><option value="60">60</option>
+    <option value="72">72</option><option value="96">96</option>
+  </select>
   <button class="tb-btn" data-tool="eraser"><svg viewBox="0 0 24 24"><path d="M20 20H7L3 16l10-10 7 7-3 3"/><path d="M6 10l8 8"/></svg><span class="lbl">Erase</span></button>
   <button class="tb-btn" data-tool="pan"><svg viewBox="0 0 24 24"><path d="M18 11V8a2 2 0 0 0-4 0v3"/><path d="M14 11V6a2 2 0 0 0-4 0v5"/><path d="M10 11V5a2 2 0 0 0-4 0v9"/><path d="M6 14a4 4 0 0 0 3.67 4h2.5c1.74 0 3.83-.82 3.83-4v-3"/></svg><span class="lbl">Pan</span></button>
   <div class="sep"></div>
@@ -396,6 +438,9 @@ body{display:flex;flex-direction:column;}
     <button class="ic-btn" id="btn-props" title="Properties">&#9881;</button>
   </div>
   <div class="sb-group">
+    <button class="ic-btn" id="btn-shortcuts" title="Keyboard shortcuts (?)">?</button>
+  </div>
+  <div class="sb-group">
     <button class="save-btn" id="btn-png">PNG</button>
     <button class="save-btn" id="btn-pdf">PDF</button>
     <button class="save-btn" id="btn-print">Print</button>
@@ -428,6 +473,7 @@ body{display:flex;flex-direction:column;}
       <div id="canvas-wrap">
         <canvas id="base-cv"></canvas>
         <canvas id="draw-cv"></canvas>
+        <canvas id="sel-cv"></canvas>
         <canvas id="grid-cv"></canvas>
         <textarea id="text-ov" rows="1"></textarea>
       </div>
@@ -536,6 +582,38 @@ body{display:flex;flex-direction:column;}
   <div style="text-align:center"><span id="pb-scale" style="font-size:9pt"></span></div>
   <div style="text-align:right;font-size:9pt;color:#555"><span id="pb-date"></span></div>
 </div>
+<div id="toast"></div>
+
+<!-- SHORTCUTS OVERLAY -->
+<div id="shortcuts">
+  <div id="shortcuts-box">
+    <h2>⌨ Keyboard Shortcuts</h2>
+    <div class="sc-grid">
+      <div class="sc-row"><span class="sc-desc">Pen</span><span class="sc-key">Q</span></div>
+      <div class="sc-row"><span class="sc-desc">Line</span><span class="sc-key">L</span></div>
+      <div class="sc-row"><span class="sc-desc">Arrow</span><span class="sc-key">A</span></div>
+      <div class="sc-row"><span class="sc-desc">Rectangle</span><span class="sc-key">R</span></div>
+      <div class="sc-row"><span class="sc-desc">Ellipse</span><span class="sc-key">E</span></div>
+      <div class="sc-row"><span class="sc-desc">Cloud</span><span class="sc-key">C</span></div>
+      <div class="sc-row"><span class="sc-desc">Measure</span><span class="sc-key">M</span></div>
+      <div class="sc-row"><span class="sc-desc">Area/Polygon</span><span class="sc-key">G</span></div>
+      <div class="sc-row"><span class="sc-desc">Leader</span><span class="sc-key">—</span></div>
+      <div class="sc-row"><span class="sc-desc">Commit shape</span><span class="sc-key">Enter / Esc</span></div>
+      <div class="sc-row"><span class="sc-desc">Text</span><span class="sc-key">T</span></div>
+      <div class="sc-row"><span class="sc-desc">Eraser</span><span class="sc-key">X</span></div>
+      <div class="sc-row"><span class="sc-desc">Pan</span><span class="sc-key">H</span></div>
+      <div class="sc-row"><span class="sc-desc">Undo</span><span class="sc-key">Ctrl+Z</span></div>
+      <div class="sc-row"><span class="sc-desc">Redo</span><span class="sc-key">Ctrl+Y</span></div>
+      <div class="sc-row"><span class="sc-desc">Save PNG</span><span class="sc-key">Ctrl+S</span></div>
+      <div class="sc-row"><span class="sc-desc">Fit to screen</span><span class="sc-key">Ctrl+0</span></div>
+      <div class="sc-row"><span class="sc-desc">Pan (hold)</span><span class="sc-key">Space</span></div>
+      <div class="sc-row"><span class="sc-desc">Close polygon</span><span class="sc-key">Esc</span></div>
+      <div class="sc-row"><span class="sc-desc">Shortcuts</span><span class="sc-key">?</span></div>
+    </div>
+    <button id="shortcuts-close">Close</button>
+  </div>
+</div>
+
 
 <script>
 (function(){
@@ -544,6 +622,17 @@ body{display:flex;flex-direction:column;}
 // ── iOS DETECTION & CANVAS MEMORY PROTECTION ────────────────
 // iPads were fine — only apply aggressive caps to iPhone.
 // iPadOS 13+ reports "Macintosh" with maxTouchPoints > 1.
+// ── TOAST SYSTEM ─────────────────────────────────────────────
+var _toastTimer;
+function toast(msg,type,dur){
+  var el=document.getElementById('toast');
+  if(!el) return;
+  el.textContent=msg;
+  el.className='show '+(type||'');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){ el.className=''; },dur||3000);
+}
+
 var IS_IPHONE = /iPhone/.test(navigator.userAgent);
 var IS_IPAD   = /iPad/.test(navigator.userAgent) ||
                 (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
@@ -614,6 +703,9 @@ var legendList=document.getElementById('legend-list');
 var bCtx=baseCv.getContext('2d');
 var dCtx=drawCv.getContext('2d');
 var gCtx=gridCv.getContext('2d');
+var selCv=document.getElementById('sel-cv');
+var selCtx=selCv.getContext('2d');
+var fontSizeSel=document.getElementById('font-size-sel');
 
 // ── iOS GESTURE & PULL-TO-REFRESH PREVENTION ────────────────
 // gesturestart/change/end are WebKit-only events. If not blocked,
@@ -639,12 +731,12 @@ document.addEventListener('touchmove', function(e){
 var tool='pen', color='#ef4444', strokeW=2, opacity=1, lineStyle='solid', fillShape=false;
 var stampType='north';
 var layers=[], activeLayerIdx=0;
-var zoom=1, panX=0, panY=0, rotation=0;
-var drawing=false, startX=0, startY=0;
+var zoom=1, panX=0, panY=0;
+var drawing=false, startX=0, startY=0, lastPenX=0, lastPenY=0;
 var compositedSnap=null;
 var undoStack=[], redoStack=[];
 var polyPoints=[], polyActive=false;
-var leaderStep=0, leaderP1=null;
+var leaderStep=0;
 var scalingMode=false, refLinePixels=0;
 var scaleSet=false, ppu=1, scaleUnit='m';
 var gridEnabled=false, gridSize=50, snapEnabled=false;
@@ -652,7 +744,7 @@ var pdfDoc=null, currentPage=1, baseLoaded=false;
 var isPanning=false, spaceDown=false, lastPanX=0, lastPanY=0;
 var pinching=false, twoMidX=0, twoMidY=0, pinchDist0=0, pinchZoom0=1;
 var PAN_DAMP=0.6, ZOOM_DAMP=0.2;
-var FONT_SIZE=18;
+var FONT_SIZE=18; // controlled by #font-size-sel
 var textX=0, textY=0;
 var hintTimer;
 
@@ -664,6 +756,8 @@ function makeLayer(name, col){
 }
 
 function initLayers(w,h){
+  // Release old layer canvases before reinitialising to free Safari GPU memory
+  if(layers.length) layers.forEach(function(l){ releaseCanvas(l.canvas); });
   var defs=[
     {name:'Structures',color:'#ef4444'},
     {name:'Boundaries',color:'#f59e0b'},
@@ -672,7 +766,11 @@ function initLayers(w,h){
     {name:'Notes',     color:'#a855f7'}
   ];
   layers=[];
-  defs.forEach(function(d){ var l=makeLayer(d.name,d.color); l.canvas.width=w; l.canvas.height=h; layers.push(l); });
+  defs.forEach(function(d){
+    var c=document.createElement('canvas');
+    c.width=w; c.height=h;
+    layers.push({name:d.name,color:d.color,visible:true,canvas:c,ctx:c.getContext('2d')});
+  });
   activeLayerIdx=0;
   renderLayers();
 }
@@ -680,9 +778,10 @@ function initLayers(w,h){
 function resizeLayers(w,h){
   layers.forEach(function(l){
     var tmp=document.createElement('canvas'); tmp.width=w; tmp.height=h;
-    tmp.getContext('2d').drawImage(l.canvas,0,0);
+    try{ tmp.getContext('2d').drawImage(l.canvas,0,0); }catch(ex){}
     l.canvas.width=w; l.canvas.height=h;
-    l.ctx.drawImage(tmp,0,0);
+    try{ l.ctx.drawImage(tmp,0,0); }catch(ex){}
+    releaseCanvas(tmp);
   });
 }
 
@@ -694,12 +793,15 @@ function composite(){
 function lctx(){ return layers[activeLayerIdx].ctx; }
 
 function pushUndo(){
-  var snap=layers.map(function(l){ return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height); });
-  undoStack.push(snap);
-  if(undoStack.length>MAX_UNDO) undoStack.shift();
-  // On iOS: clear the redo stack memory immediately to avoid holding too much
-  if(IS_IOS) redoStack=[];
-  else redoStack=[];
+  try{
+    var snap=layers.map(function(l){
+      if(!l.canvas.width||!l.canvas.height) return null;
+      return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height);
+    });
+    undoStack.push(snap);
+    if(undoStack.length>MAX_UNDO) undoStack.shift();
+    redoStack=[];
+  }catch(ex){ console.warn('pushUndo failed:',ex); }
 }
 
 function applySnap(snap){
@@ -709,14 +811,26 @@ function applySnap(snap){
 
 function undoFn(){
   if(!undoStack.length) return;
-  redoStack.push(layers.map(function(l){ return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height); }));
-  applySnap(undoStack.pop());
+  try{
+    redoStack.push(layers.map(function(l){
+      if(!l.canvas.width||!l.canvas.height) return null;
+      return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height);
+    }));
+    if(redoStack.length>MAX_UNDO) redoStack.shift();
+    applySnap(undoStack.pop());
+  }catch(ex){ console.warn('undoFn failed:',ex); }
 }
 
 function redoFn(){
   if(!redoStack.length) return;
-  undoStack.push(layers.map(function(l){ return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height); }));
-  applySnap(redoStack.pop());
+  try{
+    undoStack.push(layers.map(function(l){
+      if(!l.canvas.width||!l.canvas.height) return null;
+      return l.ctx.getImageData(0,0,l.canvas.width,l.canvas.height);
+    }));
+    if(undoStack.length>MAX_UNDO) undoStack.shift();
+    applySnap(redoStack.pop());
+  }catch(ex){ console.warn('redoFn failed:',ex); }
 }
 
 function clearFn(){
@@ -761,6 +875,8 @@ addLayerBtn.addEventListener('click',function(){
   color=l.color; clrSwatch.style.background=color; clrInput.value=color;
   renderLayers();
 });
+
+function getActiveLayerName(){ return layers[activeLayerIdx]?layers[activeLayerIdx].name:''; }
 
 function updateLegend(){
   legendList.innerHTML='';
@@ -813,7 +929,7 @@ window.addEventListener('mouseup',function(){ if(isPanning){ endPan(); viewport.
 
 // Two-finger touch
 document.addEventListener('touchstart',function(e){
-  if(e.touches.length>=2){ e.preventDefault(); isPanning=false; if(!pinching){ if(drawing){drawing=false;if(compositedSnap){dCtx.putImageData(compositedSnap,0,0);}} pinching=true; pinchDist0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); pinchZoom0=zoom; twoMidX=(e.touches[0].clientX+e.touches[1].clientX)/2; twoMidY=(e.touches[0].clientY+e.touches[1].clientY)/2; } }
+  if(e.touches.length>=2){ e.preventDefault(); isPanning=false; if(!pinching){ if(drawing){drawing=false;if(compositedSnap){dCtx.putImageData(compositedSnap,0,0);}dCtx.beginPath();try{lctx().beginPath();}catch(ex){}} pinching=true; pinchDist0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); pinchZoom0=zoom; twoMidX=(e.touches[0].clientX+e.touches[1].clientX)/2; twoMidY=(e.touches[0].clientY+e.touches[1].clientY)/2; } }
 },{passive:false});
 
 document.addEventListener('touchmove',function(e){
@@ -858,7 +974,7 @@ viewport.addEventListener('drop',function(e){ e.preventDefault(); viewport.style
 function loadFile(f){
   if(f.type==='application/pdf') loadPDF(f);
   else if(f.type.startsWith('image/')) loadImage(f);
-  else alert('Please open an image or PDF file.');
+  else toast('Please open an image or PDF file.','warn');
 }
 
 function loadImage(f){
@@ -878,19 +994,20 @@ function loadImage(f){
 }
 
 function loadPDF(f){
-  if(typeof pdfjsLib==='undefined'){ alert('PDF support needs internet connection.'); return; }
+  if(typeof pdfjsLib==='undefined'){ toast('PDF support requires an internet connection.','warn'); return; }
   var url=URL.createObjectURL(f);
   pdfjsLib.getDocument(url).promise.then(function(doc){
     pdfDoc=doc; currentPage=1; pgGrp(true);
-    renderPDFPage(1);
+    // Revoke AFTER document is loaded (not after page is rendered)
     URL.revokeObjectURL(url);
-  }).catch(function(err){ alert('PDF error: '+err.message); URL.revokeObjectURL(url); });
+    renderPDFPage(1);
+  }).catch(function(err){ toast('PDF error: '+err.message,'err'); URL.revokeObjectURL(url); });
 }
 
 function renderPDFPage(n){
   pdfDoc.getPage(n).then(function(page){
     var vp1=page.getViewport({scale:1});
-    var sc=Math.min(2400/vp1.width,2);
+    var sc=Math.min(IOS_MAX_PX/vp1.width,2);
     var vp=page.getViewport({scale:sc});
     var w=Math.round(vp.width),h=Math.round(vp.height);
     resize(w,h);
@@ -903,8 +1020,8 @@ function renderPDFPage(n){
 }
 
 function resize(w,h){
-  baseCv.width=drawCv.width=gridCv.width=w;
-  baseCv.height=drawCv.height=gridCv.height=h;
+  baseCv.width=drawCv.width=gridCv.width=selCv.width=w;
+  baseCv.height=drawCv.height=gridCv.height=selCv.height=h;
   canvasWrap.style.width=w+'px'; canvasWrap.style.height=h+'px';
 }
 
@@ -918,6 +1035,7 @@ function afterLoad(){
   pgGrp(!!pdfDoc);
   drawGrid();
   fitToVP();
+  toast('File loaded — '+(IS_IPHONE?'iPhone cap applied':'ready to annotate'),'ok',2000);
 }
 
 function pgGrp(show){
@@ -987,31 +1105,98 @@ function resetCtx(ctx){ ctx.globalAlpha=1; ctx.setLineDash([]); }
 // ── DRAWING EVENTS ──
 function onDown(e){
   if(!baseLoaded||pinching) return;
-  if(tool==='pan'){ startPan(e.touches?e.touches[0].clientX:e.clientX,e.touches?e.touches[0].clientY:e.clientY); return; }
+  if(tool==='pan'){ var _px=e.touches&&e.touches.length?e.touches[0].clientX:e.clientX; var _py=e.touches&&e.touches.length?e.touches[0].clientY:e.clientY; startPan(_px,_py); return; }
   if(spaceDown) return;
   if(e.touches&&e.touches.length>1) return;
+
+  // ── If a shape is selected, handle transform interaction first ──
+  if(selectedShape){
+    var sp=snapPt(getPos(e).x,getPos(e).y);
+    var sh=getHandleAt(sp.x,sp.y);
+    if(sh>=0){
+      // Start transform on handle
+      e.preventDefault();
+      selHandle=sh;
+      selDragStart={x:sp.x,y:sp.y,
+        shape:{type:selectedShape.type,cx:selectedShape.cx,cy:selectedShape.cy,
+               w:selectedShape.w,h:selectedShape.h,angle:selectedShape.angle,
+               color:selectedShape.color,strokeW:selectedShape.strokeW,
+               opacity:selectedShape.opacity,fill:selectedShape.fill,lineStyle:selectedShape.lineStyle}};
+      return;
+    }
+    if(isInsideShape(selectedShape,sp.x,sp.y)){
+      // Start move
+      e.preventDefault();
+      selHandle=-2;
+      selDragStart={x:sp.x,y:sp.y,
+        shape:{type:selectedShape.type,cx:selectedShape.cx,cy:selectedShape.cy,
+               w:selectedShape.w,h:selectedShape.h,angle:selectedShape.angle,
+               color:selectedShape.color,strokeW:selectedShape.strokeW,
+               opacity:selectedShape.opacity,fill:selectedShape.fill,lineStyle:selectedShape.lineStyle}};
+      return;
+    }
+    // Clicked outside — commit and fall through to new draw
+    commitSelection();
+  }
+
   if(tool==='text'){ handleText(e); return; }
-  if(tool==='polygon'){ return; } // handled by click
-  if(tool==='leader'){ return; } // handled by click
+  if(tool==='polygon'){ return; }
+  if(tool==='leader'){ return; }
   if(tool==='stamp'){ handleStamp(e); return; }
   e.preventDefault();
   drawing=true;
   var p=snapPt(getPos(e).x,getPos(e).y); startX=p.x; startY=p.y;
   compositedSnap=dCtx.getImageData(0,0,drawCv.width,drawCv.height);
-  if(tool==='pen'||tool==='eraser'){ var c=tool==='eraser'?lctx():lctx(); c.beginPath(); c.moveTo(startX,startY); }
-  if(tool==='measure'&&scalingMode){ scalingMode=false; }
+  if(tool==='pen'||tool==='eraser'){
+    var lc2=lctx();
+    // Start fresh path on BOTH the layer canvas AND the display canvas.
+    // Without this, dCtx.lineTo() connects to wherever the previous path
+    // ended, causing random lines across the screen.
+    lc2.beginPath(); lc2.moveTo(startX,startY);
+    dCtx.beginPath(); dCtx.moveTo(startX,startY);
+    lastPenX=startX; lastPenY=startY;
+  }
 }
 
 function onMove(e){
+  // ── Shape transform drag ──
+  if(selHandle!==-1 && selDragStart && !pinching){
+    if(e.cancelable) e.preventDefault();
+    var tp=getPos(e);
+    var orig=selDragStart.shape;
+    if(selHandle===-2){
+      // Move
+      selectedShape.cx=orig.cx+(tp.x-selDragStart.x);
+      selectedShape.cy=orig.cy+(tp.y-selDragStart.y);
+    } else if(selHandle===8){
+      // Rotate — angle from center to mouse, offset by 90°
+      selectedShape.angle=Math.atan2(tp.y-selectedShape.cy, tp.x-selectedShape.cx)+Math.PI/2;
+    } else {
+      // Resize — work in local coordinate space
+      var cos=Math.cos(-orig.angle), sin=Math.sin(-orig.angle);
+      var lx=(tp.x-orig.cx)*cos-(tp.y-orig.cy)*sin;
+      var ly=(tp.x-orig.cx)*sin+(tp.y-orig.cy)*cos;
+      var nw=orig.w, nh=orig.h;
+      if(selHandle===3||selHandle===2||selHandle===4) nw=Math.max(8, lx*2);
+      if(selHandle===7||selHandle===0||selHandle===6) nw=Math.max(8,-lx*2);
+      if(selHandle===1||selHandle===0||selHandle===2) nh=Math.max(8,-ly*2);
+      if(selHandle===5||selHandle===4||selHandle===6) nh=Math.max(8, ly*2);
+      selectedShape.w=nw; selectedShape.h=nh;
+    }
+    renderSelection();
+    return;
+  }
   if(!drawing||pinching) return;
   if(e.touches&&e.touches.length>1){ drawing=false; return; }
   e.preventDefault();
   var p=snapPt(getPos(e).x,getPos(e).y); var x=p.x,y=p.y;
   var lc=lctx();
   if(tool==='pen'){
-    setupCtx(lc); lc.lineTo(x,y); lc.stroke(); resetCtx(lc);
-    // also draw on display
-    setupCtx(dCtx); dCtx.lineTo(x,y); dCtx.stroke(); resetCtx(dCtx);
+    // Quadratic Bezier through midpoint for smooth curves
+    var mx=(lastPenX+x)/2, my=(lastPenY+y)/2;
+    setupCtx(lc); lc.quadraticCurveTo(lastPenX,lastPenY,mx,my); lc.stroke(); resetCtx(lc);
+    setupCtx(dCtx); dCtx.quadraticCurveTo(lastPenX,lastPenY,mx,my); dCtx.stroke(); resetCtx(dCtx);
+    lastPenX=x; lastPenY=y;
   } else if(tool==='eraser'){
     lc.save(); lc.globalCompositeOperation='destination-out'; lc.lineWidth=strokeW*4; lc.lineCap='round'; lc.lineTo(x,y); lc.stroke(); lc.restore();
     composite();
@@ -1023,8 +1208,16 @@ function onMove(e){
 }
 
 function onUp(e){
+  // End shape transform drag
+  if(selHandle!==-1){
+    selHandle=-1; selDragStart=null;
+    return;
+  }
   if(!drawing) return;
   drawing=false;
+  // Reset path on display canvas after every stroke — prevents stale
+  // path from connecting to the start of the next stroke
+  dCtx.beginPath();
   var p=snapPt(getPos(e).x,getPos(e).y);
   var lc=lctx();
   if(tool==='pen'){ composite(); }
@@ -1051,6 +1244,20 @@ function previewShape(ctx,x1,y1,x2,y2){
 }
 
 function drawFinalShape(ctx,x1,y1,x2,y2){
+  // rect and ellipse enter selection mode instead of immediately committing
+  if(tool==='rect'||tool==='ellipse'){
+    selectedShape={
+      type:tool,
+      cx:(x1+x2)/2, cy:(y1+y2)/2,
+      w:Math.max(4,Math.abs(x2-x1)), h:Math.max(4,Math.abs(y2-y1)),
+      angle:0,
+      color:color, strokeW:strokeW, opacity:opacity,
+      fill:fillShape, lineStyle:lineStyle
+    };
+    selHandle=-1; selDragStart=null;
+    renderSelection();
+    return; // don't commit yet
+  }
   setupCtx(ctx);
   drawShapeOnCtx(ctx,tool,x1,y1,x2,y2,true);
   resetCtx(ctx);
@@ -1144,51 +1351,62 @@ function formatLength(px){
 }
 
 // ── POLYGON / AREA ──
+// ── POLYGON / LEADER CLICK & DOUBLE-TAP ──
+var lastTap=0;
+// Unified touch handler: handles single tap (add point) and double-tap (close polygon)
 drawCv.addEventListener('touchend',function(e){
   if(pinching||drawing) return;
   if(e.changedTouches.length!==1) return;
+  var now=Date.now();
   var fakeE={clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY,touches:[]};
   var pos=getPos(fakeE); var p=snapPt(pos.x,pos.y);
-  if(tool==='polygon'){ if(!suppressPolyAdd){ polyPoints.push(p); polyActive=true; redrawPolyPreview(p.x,p.y); } }
-  else if(tool==='leader'){ handleLeaderClick(p.x,p.y,fakeE); }
+  if(tool==='polygon'){
+    var isDoubleTap=(now-lastTap<350);
+    lastTap=now;
+    if(isDoubleTap){
+      // Double-tap = close polygon (don't add extra point)
+      if(polyPoints.length>=3) setTimeout(closePolygon,0);
+    } else {
+      // Single tap = add vertex
+      polyPoints.push(p); polyActive=true; redrawPolyPreview(p.x,p.y);
+    }
+    return;
+  }
+  lastTap=now;
+  if(tool==='leader'){ handleLeaderClick(p.x,p.y,fakeE); }
 },{passive:true});
 
+// Desktop: click to add vertex, dblclick to close
 drawCv.addEventListener('click',function(e){
   if(pinching||drawing) return;
   var pos=getPos(e); var p=snapPt(pos.x,pos.y);
-  if(tool==='polygon'){
-    polyPoints.push(p);
-    polyActive=true;
-    // draw partial polygon on display
-    redrawPolyPreview(p.x,p.y);
-  } else if(tool==='leader'){
-    handleLeaderClick(p.x,p.y,e);
-  }
+  if(tool==='polygon'){ polyPoints.push(p); polyActive=true; redrawPolyPreview(p.x,p.y); }
+  else if(tool==='leader'){ handleLeaderClick(p.x,p.y,e); }
 });
-
 drawCv.addEventListener('dblclick',function(e){
-  if(tool==='polygon'&&polyPoints.length>=3){ closePolygon(); }
+  if(tool==='polygon'&&polyPoints.length>=3){ e.preventDefault(); closePolygon(); }
 });
-// Mobile double-tap for polygon close
-var lastTap=0, suppressPolyAdd=false;
-drawCv.addEventListener('touchend',function(e){
-  if(tool!=='polygon') return;
-  var now=Date.now();
-  if(now-lastTap<350&&polyPoints.length>=2){
-    suppressPolyAdd=true;
-    // remove the last point that was just added by the click handler, then close
-    setTimeout(function(){ if(polyPoints.length>=3) closePolygon(); suppressPolyAdd=false; },0);
-  }
-  lastTap=now;
-},{passive:true});
 
 drawCv.addEventListener('mousemove',function(e){
   if(tool==='leader'&&leaderStep===1){
-    // show preview line for leader
     composite();
     var pos=getPos(e);
     dCtx.save(); dCtx.strokeStyle=color; dCtx.lineWidth=strokeW; dCtx.setLineDash([4,3]); dCtx.globalAlpha=0.6;
     dCtx.beginPath(); dCtx.moveTo(leaderP1x,leaderP1y); dCtx.lineTo(pos.x,pos.y); dCtx.stroke(); dCtx.restore();
+  }
+  // Live measurement preview
+  if(tool==='measure'&&drawing){
+    var mpos=getPos(e);
+    var mpx=Math.hypot(mpos.x-startX,mpos.y-startY);
+    dCtx.putImageData(compositedSnap,0,0);
+    previewShape(dCtx,startX,startY,mpos.x,mpos.y);
+    // show live label
+    var midX=(startX+mpos.x)/2, midY=(startY+mpos.y)/2;
+    var liveLabel=scaleSet?formatLength(mpx):(Math.round(mpx)+'px');
+    dCtx.save(); dCtx.font='bold 12px Arial,sans-serif'; dCtx.fillStyle='#fff';
+    dCtx.strokeStyle='#000'; dCtx.lineWidth=3; dCtx.textAlign='center';
+    dCtx.strokeText(liveLabel,midX,midY-6); dCtx.lineWidth=0; dCtx.fillStyle=color; dCtx.fillText(liveLabel,midX,midY-6);
+    dCtx.restore();
   }
   if(!polyActive||tool!=='polygon') return;
   var pos=getPos(e);
@@ -1271,13 +1489,14 @@ function handleLeaderClick(x,y,e){
     lc.moveTo(leaderP1x,leaderP1y);
     lc.lineTo(leaderP1x-hw*Math.cos(ang+Math.PI/6),leaderP1y-hw*Math.sin(ang+Math.PI/6));
     lc.stroke();
-    // horizontal shoulder
-    lc.beginPath(); lc.moveTo(x,y); lc.lineTo(x+60,y); lc.stroke();
+    // horizontal shoulder — direction based on which half of canvas we're on
+    var shoulderDir = (x > baseCv.width/2) ? -1 : 1;
+    var shoulderLen = 60;
+    lc.beginPath(); lc.moveTo(x,y); lc.lineTo(x+shoulderLen*shoulderDir,y); lc.stroke();
     resetCtx(lc);
     composite();
-    // open text overlay at shoulder end
-    textX=x+4; textY=y;
-    showTextOverlay(x+62,y,e);
+    textX=x+(shoulderLen+2)*shoulderDir; textY=y;
+    showTextOverlay(textX, y);
     leaderStep=0;
     pushUndo();
   }
@@ -1335,14 +1554,10 @@ function handleText(e){
   var p=getPos(e);
   textX=p.x; textY=p.y;
   commitText();
-  showTextOverlay(p.x,p.y,e);
+  showTextOverlay(p.x,p.y);
 }
 
-function showTextOverlay(cx,cy,e){
-  var r=viewport.getBoundingClientRect();
-  var sx=r.left+panX+cx*zoom;
-  var sy=r.top+panY+cy*zoom;
-  var wr=canvasWrap.getBoundingClientRect();
+function showTextOverlay(cx,cy){
   textOv.style.display='block';
   textOv.style.left=(cx*zoom)+'px';
   textOv.style.top=(cy*zoom-FONT_SIZE*zoom)+'px';
@@ -1368,6 +1583,201 @@ function commitText(){
   lc.globalAlpha=1; composite(); pushUndo();
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// SHAPE SELECTION & TRANSFORM SYSTEM
+// After drawing a rect or ellipse, the shape enters "selected" mode.
+// It is held as a vector object (not burned to pixels) until committed.
+// 8 resize handles + 1 rotation handle allow full transform.
+// ══════════════════════════════════════════════════════════════
+
+var selectedShape = null; // {type,cx,cy,w,h,angle,color,strokeW,opacity,fill,lineStyle}
+var selHandle     = -1;   // -1=none, 0-7=resize, 8=rotate, -2=move
+var selDragStart  = null; // snapshot at drag start
+
+// ── Handle layout (local space, relative to shape center) ──
+// 0=TL 1=TC 2=TR 3=MR 4=BR 5=BC 6=BL 7=ML  8=ROTATE
+var HANDLE_SIZE   = 9;   // px on screen (scaled by zoom)
+var ROTATE_OFFSET = 28;  // px above top-center on screen
+
+function getHandlePositions(s){
+  var hw=s.w/2, hh=s.h/2;
+  var rotOff = ROTATE_OFFSET / zoom;
+  var local=[
+    {x:-hw,y:-hh},{x:0,y:-hh},{x:hw,y:-hh},
+    {x:hw,y:0},
+    {x:hw,y:hh},{x:0,y:hh},{x:-hw,y:hh},
+    {x:-hw,y:0},
+    {x:0,y:-hh-rotOff} // rotation handle
+  ];
+  var cos=Math.cos(s.angle), sin=Math.sin(s.angle);
+  return local.map(function(p){
+    return {
+      x: s.cx + p.x*cos - p.y*sin,
+      y: s.cy + p.x*sin + p.y*cos
+    };
+  });
+}
+
+function getHandleAt(x,y){
+  if(!selectedShape) return -1;
+  var handles=getHandlePositions(selectedShape);
+  var hitR=(HANDLE_SIZE+4)/zoom;
+  for(var i=handles.length-1;i>=0;i--){
+    if(Math.hypot(x-handles[i].x,y-handles[i].y)<hitR) return i;
+  }
+  return -1;
+}
+
+function isInsideShape(s,x,y){
+  var cos=Math.cos(-s.angle),sin=Math.sin(-s.angle);
+  var lx=(x-s.cx)*cos-(y-s.cy)*sin;
+  var ly=(x-s.cx)*sin+(y-s.cy)*cos;
+  if(s.type==='rect')    return Math.abs(lx)<=s.w/2+4/zoom && Math.abs(ly)<=s.h/2+4/zoom;
+  if(s.type==='ellipse') return (lx/(s.w/2+4/zoom))*(lx/(s.w/2+4/zoom))+(ly/(s.h/2+4/zoom))*(ly/(s.h/2+4/zoom))<=1;
+  return false;
+}
+
+function renderSelection(){
+  selCtx.clearRect(0,0,selCv.width,selCv.height);
+  if(!selectedShape) return;
+  var s=selectedShape;
+  var lw=1.5/zoom;
+
+  selCtx.save();
+  selCtx.translate(s.cx,s.cy);
+  selCtx.rotate(s.angle);
+
+  // ── Shape outline preview ──
+  selCtx.strokeStyle='#00D4FF';
+  selCtx.lineWidth=s.strokeW;
+  selCtx.globalAlpha=s.opacity;
+  if(s.lineStyle==='dashed') selCtx.setLineDash([s.strokeW*4,s.strokeW*3]);
+  else if(s.lineStyle==='dotted') selCtx.setLineDash([s.strokeW,s.strokeW*2.5]);
+  else selCtx.setLineDash([]);
+  selCtx.fillStyle=s.color;
+
+  if(s.type==='rect'){
+    if(s.fill){ selCtx.globalAlpha=s.opacity*0.25; selCtx.fillRect(-s.w/2,-s.h/2,s.w,s.h); selCtx.globalAlpha=s.opacity; }
+    selCtx.strokeRect(-s.w/2,-s.h/2,s.w,s.h);
+  } else if(s.type==='ellipse'){
+    selCtx.beginPath(); selCtx.ellipse(0,0,Math.max(1,s.w/2),Math.max(1,s.h/2),0,0,Math.PI*2);
+    if(s.fill){ selCtx.globalAlpha=s.opacity*0.25; selCtx.fill(); selCtx.globalAlpha=s.opacity; }
+    selCtx.stroke();
+  }
+  selCtx.restore();
+
+  // ── Selection border (dashed cyan) ──
+  selCtx.save();
+  selCtx.translate(s.cx,s.cy);
+  selCtx.rotate(s.angle);
+  selCtx.strokeStyle='rgba(0,212,255,0.8)';
+  selCtx.lineWidth=lw;
+  selCtx.setLineDash([4/zoom,3/zoom]);
+  selCtx.globalAlpha=1;
+  var pad=6/zoom;
+  if(s.type==='rect')    selCtx.strokeRect(-s.w/2-pad,-s.h/2-pad,s.w+pad*2,s.h+pad*2);
+  else if(s.type==='ellipse'){
+    selCtx.beginPath(); selCtx.ellipse(0,0,s.w/2+pad,s.h/2+pad,0,0,Math.PI*2); selCtx.stroke();
+  }
+  selCtx.restore();
+
+  // ── Draw rotation connector line ──
+  var handles=getHandlePositions(s);
+  selCtx.save();
+  selCtx.strokeStyle='rgba(0,212,255,0.5)';
+  selCtx.lineWidth=lw;
+  selCtx.setLineDash([2/zoom,2/zoom]);
+  selCtx.globalAlpha=1;
+  selCtx.beginPath();
+  selCtx.moveTo(handles[1].x,handles[1].y);
+  selCtx.lineTo(handles[8].x,handles[8].y);
+  selCtx.stroke();
+  selCtx.restore();
+
+  // ── Draw handles ──
+  var hs=HANDLE_SIZE/zoom;
+  selCtx.setLineDash([]);
+  selCtx.globalAlpha=1;
+  handles.forEach(function(h,i){
+    selCtx.save();
+    if(i===8){
+      // Rotation handle — gold circle
+      selCtx.beginPath(); selCtx.arc(h.x,h.y,hs*0.65,0,Math.PI*2);
+      selCtx.fillStyle='#FBBF24'; selCtx.strokeStyle='#fff';
+      selCtx.lineWidth=lw*1.5; selCtx.fill(); selCtx.stroke();
+      // draw a rotation arrow icon inside
+      selCtx.strokeStyle='#0a0e27'; selCtx.lineWidth=lw;
+      selCtx.beginPath();
+      var ar=hs*0.35;
+      selCtx.arc(h.x,h.y,ar,Math.PI*0.2,Math.PI*1.8,false);
+      selCtx.stroke();
+    } else {
+      // Resize handle — white rounded square
+      var corner=hs*0.25;
+      selCtx.fillStyle='#fff'; selCtx.strokeStyle='#00D4FF';
+      selCtx.lineWidth=lw*1.5;
+      selCtx.beginPath();
+      selCtx.roundRect(h.x-hs/2,h.y-hs/2,hs,hs,corner);
+      selCtx.fill(); selCtx.stroke();
+    }
+    selCtx.restore();
+  });
+}
+
+function commitSelection(){
+  if(!selectedShape) return;
+  var s=selectedShape;
+  var lc=lctx();
+  lc.save();
+  lc.translate(s.cx,s.cy);
+  lc.rotate(s.angle);
+  lc.strokeStyle=s.color; lc.fillStyle=s.color;
+  lc.lineWidth=s.strokeW; lc.lineCap='round'; lc.lineJoin='round';
+  lc.globalAlpha=s.opacity;
+  if(s.lineStyle==='dashed') lc.setLineDash([s.strokeW*4,s.strokeW*3]);
+  else if(s.lineStyle==='dotted') lc.setLineDash([s.strokeW,s.strokeW*2.5]);
+  else lc.setLineDash([]);
+  if(s.type==='rect'){
+    if(s.fill){ lc.globalAlpha=s.opacity*0.25; lc.fillRect(-s.w/2,-s.h/2,s.w,s.h); lc.globalAlpha=s.opacity; }
+    lc.strokeRect(-s.w/2,-s.h/2,s.w,s.h);
+  } else if(s.type==='ellipse'){
+    lc.beginPath(); lc.ellipse(0,0,Math.max(1,s.w/2),Math.max(1,s.h/2),0,0,Math.PI*2);
+    if(s.fill){ lc.globalAlpha=s.opacity*0.25; lc.fill(); lc.globalAlpha=s.opacity; }
+    lc.stroke();
+  }
+  lc.restore(); lc.globalAlpha=1; lc.setLineDash([]);
+  selectedShape=null; selHandle=-1; selDragStart=null;
+  selCtx.clearRect(0,0,selCv.width,selCv.height);
+  composite(); pushUndo();
+}
+
+function cancelSelection(){
+  selectedShape=null; selHandle=-1; selDragStart=null;
+  selCtx.clearRect(0,0,selCv.width,selCv.height);
+  composite();
+}
+
+// ── Cursor for handles ──
+var HANDLE_CURSORS=['nw-resize','n-resize','ne-resize','e-resize','se-resize','s-resize','sw-resize','w-resize','grab'];
+function updateSelCursor(x,y){
+  if(!selectedShape){ drawCv.style.cursor='crosshair'; return; }
+  var h=getHandleAt(x,y);
+  if(h===8){ drawCv.style.cursor='grab'; return; }
+  if(h>=0){ drawCv.style.cursor=HANDLE_CURSORS[h]; return; }
+  if(isInsideShape(selectedShape,x,y)){ drawCv.style.cursor='move'; return; }
+  drawCv.style.cursor='crosshair';
+}
+
+// Override drawCv mousemove to update cursor when selection is active
+drawCv.addEventListener('mousemove',function(e){
+  if(selectedShape && selHandle===-1){ updateSelCursor(getPos(e).x,getPos(e).y); }
+},{passive:true});
+
+// ══════════════════════════════════════════════════════════════
+// END SHAPE SELECTION SYSTEM
+// ══════════════════════════════════════════════════════════════
+
 // ── CANVAS TOUCH EVENTS ──
 drawCv.addEventListener('touchstart',function(e){
   if(e.touches.length>=2){ e.preventDefault(); if(drawing){drawing=false;if(compositedSnap) dCtx.putImageData(compositedSnap,0,0);} pinching=true; pinchDist0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); pinchZoom0=zoom; twoMidX=(e.touches[0].clientX+e.touches[1].clientX)/2; twoMidY=(e.touches[0].clientY+e.touches[1].clientY)/2; return; }
@@ -1385,7 +1795,7 @@ drawCv.addEventListener('mouseleave',onUp);
 document.querySelectorAll('.tb-btn[data-tool]').forEach(function(btn){
   btn.addEventListener('click',function(){
     if(tool==='polygon'&&polyActive){ closePolygon(); }
-    commitText(); leaderStep=0;
+    commitText(); commitSelection(); leaderStep=0;
     tool=btn.dataset.tool;
     document.querySelectorAll('.tb-btn[data-tool]').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
@@ -1433,6 +1843,8 @@ fillBtn.addEventListener('click',function(){ fillShape=!fillShape; fillBtn.class
 
 // ── COLOR / SLIDERS ──
 // Color swatch click handled by overlaid input (iOS-compatible)
+// Font size
+fontSizeSel.addEventListener('change',function(e){ FONT_SIZE=parseInt(e.target.value); });
 clrInput.addEventListener('input',function(e){ color=e.target.value; clrSwatch.style.background=color; });
 swSl.addEventListener('input',function(e){ strokeW=parseInt(e.target.value); swVal.textContent=strokeW+'px'; });
 opSl.addEventListener('input',function(e){ opacity=parseInt(e.target.value)/100; opVal.textContent=e.target.value+'%'; });
@@ -1462,7 +1874,7 @@ btnSetScale.addEventListener('click',function(){
   document.querySelector('.tb-btn[data-tool="measure"]').classList.add('active');
   drawCv.style.cursor='crosshair';
   scaleStatus.textContent='Draw a line of known length...';
-  alert('Now draw a line on the plan whose real length you know, then return to Properties.');
+  toast('Draw a line on the plan, then enter its length in the Properties panel.','ok',4000);
 });
 
 function showScaleDlg(){
@@ -1479,7 +1891,7 @@ document.getElementById('scale-cancel').addEventListener('click',function(){
 document.getElementById('scale-ok').addEventListener('click',function(){
   var len=parseFloat(document.getElementById('ref-len').value);
   var unit=document.getElementById('ref-unit').value.trim()||'m';
-  if(!len||len<=0||!refLinePixels){ alert('Draw a reference line first and enter a valid length.'); return; }
+  if(!len||len<=0||!refLinePixels){ toast('Draw a reference line first, then enter its real length.','warn'); return; }
   ppu=len/refLinePixels; scaleUnit=unit; scaleSet=true;
   ppuIn.value=(1/ppu).toFixed(4); unitIn.value=unit;
   scaleStatus.textContent='1 px = '+(1/ppu).toFixed(4)+' '+unit;
@@ -1503,13 +1915,16 @@ function compositeExport(){
   return out;
 }
 
+document.getElementById('btn-shortcuts').addEventListener('click',function(){
+  document.getElementById('shortcuts').classList.toggle('show');
+});
 btnPng.addEventListener('click',function(){
   var c=compositeExport();
   var a=document.createElement('a'); a.download='site-plan.png'; a.href=c.toDataURL('image/png'); a.click();
 });
 
 btnPdf.addEventListener('click',function(){
-  if(typeof window.jspdf==='undefined'&&typeof jsPDF==='undefined'){ alert('PDF library not loaded. Check internet connection.'); return; }
+  if(typeof window.jspdf==='undefined'&&typeof jsPDF==='undefined'){ toast('PDF export requires an internet connection.','warn'); return; }
   var JSPDF=window.jspdf?window.jspdf.jsPDF:jsPDF;
   var c=compositeExport();
   var wMM=297,hMM=Math.round(c.height/c.width*297);
@@ -1568,12 +1983,30 @@ document.addEventListener('keydown',function(e){
     if(e.key==='0'){ e.preventDefault(); fitToVP(); return; }
   }
   if(e.code==='Space'&&e.target===document.body){ e.preventDefault(); spaceDown=true; viewport.style.cursor='grab'; showHint(); return; }
-  if(e.key==='Escape'&&tool==='polygon'&&polyActive){ closePolygon(); return; }
-  if(e.key==='Escape'){ leaderStep=0; }
+  if(e.key==='Escape'){
+    if(selectedShape){ commitSelection(); return; }
+    if(tool==='polygon'&&polyActive){ closePolygon(); return; }
+    leaderStep=0;
+    return;
+  }
+  if(e.key==='?'||e.key==='/'){
+    var so=document.getElementById('shortcuts');
+    so.classList.toggle('show');
+    return;
+  }
+  if(e.key==='Enter'&&selectedShape){ commitSelection(); return; }
   var map={q:'pen',l:'line',a:'arrow',r:'rect',e:'ellipse',c:'cloud',m:'measure',g:'polygon',t:'text',x:'eraser',h:'pan'};
   if(map[e.key]){ var b=document.querySelector('.tb-btn[data-tool="'+map[e.key]+'"]'); if(b) b.click(); }
 });
 document.addEventListener('keyup',function(e){ if(e.code==='Space'){ spaceDown=false; viewport.style.cursor=''; hideHint(); } });
+
+// Shortcuts close
+document.getElementById('shortcuts-close').addEventListener('click',function(){
+  document.getElementById('shortcuts').classList.remove('show');
+});
+document.getElementById('shortcuts').addEventListener('click',function(e){
+  if(e.target===this) this.classList.remove('show');
+});
 
 function showHint(){ panHint.classList.add('show'); clearTimeout(hintTimer); hintTimer=setTimeout(hideHint,2000); }
 function hideHint(){ panHint.classList.remove('show'); }
