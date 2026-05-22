@@ -28,6 +28,25 @@
   .val-lbl{font-size:11px;color:var(--text2);min-width:26px}
   .tip{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#222;color:#fff;font-size:11px;padding:3px 7px;border-radius:5px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:100}
   .tool-btn:hover .tip{opacity:1}
+  /* visible label under icon — hidden on desktop, shown on mobile */
+  .lbl{display:none;font-size:9px;color:var(--text2);line-height:1;margin-top:2px;pointer-events:none;white-space:nowrap}
+  .tool-btn.active .lbl{color:var(--accent2)}
+  @media(max-width:700px){
+    #toolbar{height:auto;min-height:64px;padding:6px 8px;flex-wrap:nowrap;align-items:center;gap:2px}
+    .tool-btn{flex-direction:column;width:44px;height:52px;gap:1px;border-radius:8px}
+    .tool-btn svg{width:20px;height:20px}
+    .lbl{display:block}
+    .tip{display:none}
+    .sep{height:38px;margin:0 2px}
+    #upload-btn{font-size:12px;padding:0 10px;height:40px}
+    .slider-wrap{flex-direction:column;gap:3px;align-items:center}
+    .slider-wrap svg{display:none}
+    input[type=range]{width:52px}
+    .val-lbl{font-size:10px;min-width:20px;text-align:center}
+    #color-swatch{width:28px;height:28px}
+    #color-lbl{display:block !important}
+    .slider-wrap .val-lbl{font-size:10px}
+  }
   /* SUBBAR */
   #subbar{height:44px;background:var(--surface);border-bottom:1px solid var(--border);display:none;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0;gap:8px}
   #subbar.visible{display:flex}
@@ -70,20 +89,20 @@
   <input type="file" id="file-input" accept="image/*,.pdf" style="display:none">
   <div class="sep"></div>
   <!-- DRAW TOOLS -->
-  <button class="tool-btn active" data-tool="pen"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg><span class="tip">Pen (P)</span></button>
-  <button class="tool-btn" data-tool="line"><svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/></svg><span class="tip">Line (L)</span></button>
-  <button class="tool-btn" data-tool="arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg><span class="tip">Arrow (A)</span></button>
-  <button class="tool-btn" data-tool="rect"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/></svg><span class="tip">Rectangle (R)</span></button>
-  <button class="tool-btn" data-tool="ellipse"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg><span class="tip">Ellipse (E)</span></button>
-  <button class="tool-btn" data-tool="text"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg><span class="tip">Text (T)</span></button>
-  <button class="tool-btn" data-tool="eraser"><svg viewBox="0 0 24 24"><path d="M20 20H7L3 16l10-10 7 7-3 3"/><path d="M6 10l8 8"/></svg><span class="tip">Eraser (X)</span></button>
-  <!-- PAN TOOL -->
-  <button class="tool-btn" data-tool="pan"><svg viewBox="0 0 24 24"><path d="M18 11V8a2 2 0 0 0-4 0v3"/><path d="M14 11V6a2 2 0 0 0-4 0v5"/><path d="M10 11V5a2 2 0 0 0-4 0v9"/><path d="M6 14a4 4 0 0 0 3.67 4h2.5c1.74 0 3.83-.82 3.83-4v-3"/></svg><span class="tip">Pan (Space)</span></button>
+  <button class="tool-btn active" data-tool="pen"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg><span class="tip">Pen (P)</span><span class="lbl">Pen</span></button>
+  <button class="tool-btn" data-tool="line"><svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/></svg><span class="tip">Line (L)</span><span class="lbl">Line</span></button>
+  <button class="tool-btn" data-tool="arrow"><svg viewBox="0 0 24 24"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg><span class="tip">Arrow (A)</span><span class="lbl">Arrow</span></button>
+  <button class="tool-btn" data-tool="rect"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/></svg><span class="tip">Rectangle (R)</span><span class="lbl">Rect</span></button>
+  <button class="tool-btn" data-tool="ellipse"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg><span class="tip">Ellipse (E)</span><span class="lbl">Ellipse</span></button>
+  <button class="tool-btn" data-tool="text"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg><span class="tip">Text (T)</span><span class="lbl">Text</span></button>
+  <button class="tool-btn" data-tool="eraser"><svg viewBox="0 0 24 24"><path d="M20 20H7L3 16l10-10 7 7-3 3"/><path d="M6 10l8 8"/></svg><span class="tip">Eraser (X)</span><span class="lbl">Erase</span></button>
+  <button class="tool-btn" data-tool="pan"><svg viewBox="0 0 24 24"><path d="M18 11V8a2 2 0 0 0-4 0v3"/><path d="M14 11V6a2 2 0 0 0-4 0v5"/><path d="M10 11V5a2 2 0 0 0-4 0v9"/><path d="M6 14a4 4 0 0 0 3.67 4h2.5c1.74 0 3.83-.82 3.83-4v-3"/></svg><span class="tip">Pan (Space)</span><span class="lbl">Pan</span></button>
   <div class="sep"></div>
   <!-- COLOR + SLIDERS -->
-  <div style="position:relative;flex-shrink:0">
+  <div style="position:relative;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px">
     <div id="color-swatch" style="background:#6c63ff"></div>
     <input type="color" id="color-input" value="#6c63ff">
+    <span class="lbl" style="display:none" id="color-lbl">Color</span>
   </div>
   <div class="sep"></div>
   <div class="slider-wrap">
@@ -98,9 +117,9 @@
     <span class="val-lbl" id="opacity-val">100%</span>
   </div>
   <div class="sep"></div>
-  <button class="tool-btn" id="btn-undo"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg><span class="tip">Undo (Ctrl+Z)</span></button>
-  <button class="tool-btn" id="btn-redo"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/></svg><span class="tip">Redo (Ctrl+Y)</span></button>
-  <button class="tool-btn" id="btn-clear"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg><span class="tip">Clear All</span></button>
+  <button class="tool-btn" id="btn-undo"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg><span class="tip">Undo (Ctrl+Z)</span><span class="lbl">Undo</span></button>
+  <button class="tool-btn" id="btn-redo"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/></svg><span class="tip">Redo (Ctrl+Y)</span><span class="lbl">Redo</span></button>
+  <button class="tool-btn" id="btn-clear"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg><span class="tip">Clear All</span><span class="lbl">Clear</span></button>
 </div>
 
 <div id="subbar">
@@ -283,16 +302,17 @@
 
   document.addEventListener('touchstart', function(e){
     if(e.touches.length === 2){
-      if(drawing){ drawing = false; if(savedSnap) dCtx.putImageData(savedSnap,0,0); }
       isPanning = false;
-      pinching = true;
-      pinchDist0 = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      pinchZoom0 = zoom;
-      twoFingerMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      twoFingerMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      // drawCanvas listener already set pinching + seeded pinch state if target was canvas
+      // For touches outside the canvas we seed here instead
+      if(!pinching){
+        if(drawing){ drawing=false; if(savedSnap) dCtx.putImageData(savedSnap,0,0); }
+        pinching=true;
+        pinchDist0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+        pinchZoom0=zoom;
+        twoFingerMidX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+        twoFingerMidY=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      }
     }
   }, {passive:true});
 
@@ -531,9 +551,32 @@
   drawCanvas.addEventListener('mousemove', onMove);
   drawCanvas.addEventListener('mouseup',   onUp);
   drawCanvas.addEventListener('mouseleave',onUp);
-  drawCanvas.addEventListener('touchstart',onDown,{passive:false});
-  drawCanvas.addEventListener('touchmove', onMove,{passive:false});
-  drawCanvas.addEventListener('touchend',  onUp,  {passive:false});
+
+  // iOS fires element listeners BEFORE document listeners, so without this guard
+  // the second finger triggers onDown and corrupts savedSnap before pinching=true.
+  drawCanvas.addEventListener('touchstart', function(e){
+    if(e.touches.length >= 2){
+      e.preventDefault();
+      if(drawing){ drawing=false; if(savedSnap) dCtx.putImageData(savedSnap,0,0); }
+      pinching=true;
+      pinchDist0=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      pinchZoom0=zoom;
+      twoFingerMidX=(e.touches[0].clientX+e.touches[1].clientX)/2;
+      twoFingerMidY=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      return;
+    }
+    onDown(e);
+  },{passive:false});
+
+  drawCanvas.addEventListener('touchmove', function(e){
+    if(e.touches.length>=2||pinching){ e.preventDefault(); return; }
+    onMove(e);
+  },{passive:false});
+
+  drawCanvas.addEventListener('touchend', function(e){
+    if(pinching) return;
+    onUp(e);
+  },{passive:false});
 
   // ── Text ──
   function handleText(e){
