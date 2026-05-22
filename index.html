@@ -3,7 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Site Plan Annotator</title>
+<title>Site Annotator · Always On Generators</title>
+
+<!-- PWA / Home Screen -->
+<link rel="manifest" href="../manifest.json">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="theme-color" content="#FBBF24">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Site Annotator">
+
+<!-- AOG Fonts (matches hub) -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f0f11;--surf:#1a1a1f;--surf2:#24242b;--b1:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.14);--txt:#f0f0f2;--txt2:#8888aa;--acc:#6c63ff;--acc2:#9d97ff;--rad:9px}
 html{overscroll-behavior:none;touch-action:none}
@@ -156,9 +168,100 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
   #print-block{display:block!important;position:fixed;bottom:0;left:0;right:0;background:#fff;color:#000;font-family:Arial,sans-serif;font-size:10pt;border-top:2px solid #000;padding:6px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 }
 #print-block{display:none}
+
+/* ── AOG NAV BAR ── */
+#aog-nav{
+  position:relative;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;height:48px;flex-shrink:0;
+  background:linear-gradient(90deg,#0A0E27,#0F1535);
+  border-bottom:2px solid #FBBF24;
+  box-shadow:0 0 20px rgba(251,191,36,0.2);
+}
+#aog-nav::after{
+  content:'';position:absolute;bottom:-2px;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,#F97316,transparent);
+  pointer-events:none;
+}
+.aog-back{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Orbitron',monospace;font-size:0.62rem;font-weight:700;
+  letter-spacing:2.5px;text-transform:uppercase;
+  color:#FBBF24;text-decoration:none;
+  padding:6px 12px;
+  border:1.5px solid rgba(251,191,36,0.35);
+  border-radius:2px;
+  background:linear-gradient(135deg,rgba(15,21,53,0.9),rgba(26,40,71,0.7));
+  clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+  transition:all 0.2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.aog-back:hover{border-color:#F97316;color:#FB923C;box-shadow:0 0 14px rgba(249,115,22,0.3);}
+.aog-back svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.aog-nav-title{
+  font-family:'Orbitron',monospace;font-size:0.7rem;font-weight:700;
+  letter-spacing:4px;text-transform:uppercase;
+  background:linear-gradient(135deg,#FBBF24,#F97316);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:none;
+}
+.aog-nav-right{
+  font-family:'Share Tech Mono',monospace;font-size:0.6rem;
+  letter-spacing:2px;color:#94A3B8;text-transform:uppercase;
+  display:flex;align-items:center;gap:6px;
+}
+.aog-status-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#10B981;box-shadow:0 0 6px #10B981;
+  animation:aogPulse 2s ease-in-out infinite;flex-shrink:0;
+}
+.aog-status-dot.offline{background:#6B7280;box-shadow:0 0 6px #6B7280;animation:none;}
+@keyframes aogPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+/* Offline banner (same pattern as hub) */
+#aog-offline{
+  display:none;padding:8px 16px;
+  background:linear-gradient(90deg,rgba(10,14,39,0.97),rgba(15,21,53,0.97));
+  border-bottom:1.5px solid #F97316;
+  text-align:center;font-family:'Share Tech Mono',monospace;
+  font-size:0.65rem;letter-spacing:2.5px;text-transform:uppercase;
+  color:#FB923C;text-shadow:0 0 8px rgba(249,115,22,0.5);
+  animation:aogOfflinePulse 2s ease-in-out infinite;flex-shrink:0;
+}
+#aog-offline.show{display:block;}
+@keyframes aogOfflinePulse{0%,100%{opacity:1}50%{opacity:0.7}}
+/* CDN warning (shown when offline + PDF tools attempted) */
+#cdn-warn{
+  display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,rgba(15,21,53,0.98),rgba(26,40,71,0.98));
+  border:1px solid #F97316;border-radius:4px;
+  padding:12px 18px;z-index:999;
+  font-family:'Share Tech Mono',monospace;font-size:0.68rem;letter-spacing:1.5px;
+  color:#FB923C;text-align:center;max-width:320px;width:calc(100vw - 32px);
+  box-shadow:0 0 24px rgba(249,115,22,0.3);
+  clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+}
+#cdn-warn.show{display:block;}
+/* shift body down to make room for nav */
+body{display:flex;flex-direction:column;}
+#toolbar{flex-shrink:0}
 </style>
 </head>
 <body>
+
+<!-- AOG NAV BAR -->
+<nav id="aog-nav">
+  <a class="aog-back" href="../" id="back-btn">
+    <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+    Hub
+  </a>
+  <span class="aog-nav-title">Site Annotator</span>
+  <div class="aog-nav-right">
+    <span class="aog-status-dot" id="aog-dot"></span>
+    <span id="aog-net-lbl">Online</span>
+  </div>
+</nav>
+<div id="aog-offline">⚠ &nbsp; No network · PDF &amp; export features need connection</div>
+<div id="cdn-warn">⚠ &nbsp; PDF support requires an internet connection</div>
 
 <!-- TOOLBAR -->
 <div id="tb">
@@ -1375,5 +1478,68 @@ if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='https:
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// ── AOG Online/Offline detection ──────────────────────────
+(function(){
+  var dot    = document.getElementById('aog-dot');
+  var lbl    = document.getElementById('aog-net-lbl');
+  var banner = document.getElementById('aog-offline');
+  function goOnline(){
+    dot.classList.remove('offline');
+    lbl.textContent='Online';
+    banner.classList.remove('show');
+  }
+  function goOffline(){
+    dot.classList.add('offline');
+    lbl.textContent='Offline';
+    banner.classList.add('show');
+  }
+  window.addEventListener('online', goOnline);
+  window.addEventListener('offline', goOffline);
+  if(!navigator.onLine) goOffline();
+
+  // Intercept PDF/jsPDF feature requests when offline
+  window.addEventListener('load', function(){
+    var btnPdf   = document.getElementById('btn-pdf');
+    var fileIn   = document.getElementById('file-in');
+    var cdnWarn  = document.getElementById('cdn-warn');
+    var warnTimer;
+    function showCdnWarn(){
+      cdnWarn.classList.add('show');
+      clearTimeout(warnTimer);
+      warnTimer = setTimeout(function(){ cdnWarn.classList.remove('show'); }, 4000);
+    }
+    if(btnPdf){
+      btnPdf.addEventListener('click', function(e){
+        if(!navigator.onLine && typeof window.jspdf === 'undefined'){
+          e.stopImmediatePropagation();
+          showCdnWarn();
+        }
+      }, true);
+    }
+    if(fileIn){
+      fileIn.addEventListener('change', function(e){
+        var f = e.target.files[0];
+        if(f && f.type === 'application/pdf' && !navigator.onLine && typeof pdfjsLib === 'undefined'){
+          showCdnWarn();
+        }
+      });
+    }
+  });
+})();
+
+// ── Register this page with the parent service worker ─────
+// The SW is at root scope, so it will cache this page automatically.
+// We just ensure registration is attempted if not already active.
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistration('../').then(function(reg){
+    if(!reg){
+      navigator.serviceWorker.register('../sw.js', {scope: '../'})
+        .catch(function(e){ console.warn('[SW] annotator reg failed:', e); });
+    }
+  });
+}
+</script>
 </body>
 </html>
