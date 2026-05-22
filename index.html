@@ -277,12 +277,12 @@
   });
 
   // ── Unified two-finger pan + pinch zoom (fires on ANY element) ──
-  // We attach to document so two fingers on the drawCanvas also works.
   var twoFingerMidX = 0, twoFingerMidY = 0;
+  var PAN_DAMP  = 0.55;
+  var ZOOM_DAMP = 0.18;
 
   document.addEventListener('touchstart', function(e){
     if(e.touches.length === 2){
-      // Cancel any active single-finger draw
       if(drawing){ drawing = false; if(savedSnap) dCtx.putImageData(savedSnap,0,0); }
       isPanning = false;
       pinching = true;
@@ -304,14 +304,15 @@
       var midY = (t0.clientY + t1.clientY) / 2;
       var dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
 
-      // Pan from midpoint movement
-      panX += midX - twoFingerMidX;
-      panY += midY - twoFingerMidY;
+      // Damped pan
+      panX += (midX - twoFingerMidX) * PAN_DAMP;
+      panY += (midY - twoFingerMidY) * PAN_DAMP;
 
-      // Zoom from pinch, anchored at midpoint
+      // Damped zoom eased toward target
       var rect = viewport.getBoundingClientRect();
       var cx = midX - rect.left, cy = midY - rect.top;
-      var newZoom = Math.max(0.05, Math.min(10, pinchZoom0 * (dist / pinchDist0)));
+      var targetZoom = Math.max(0.05, Math.min(10, pinchZoom0 * (dist / pinchDist0)));
+      var newZoom = zoom + (targetZoom - zoom) * ZOOM_DAMP;
       var ratio = newZoom / zoom;
       panX = cx - ratio * (cx - panX);
       panY = cy - ratio * (cy - panY);
@@ -319,8 +320,6 @@
 
       twoFingerMidX = midX;
       twoFingerMidY = midY;
-      pinchZoom0 = zoom;
-      pinchDist0 = dist;
 
       clampPan(); applyTransform();
     } else if(isPanning && e.touches.length === 1){
