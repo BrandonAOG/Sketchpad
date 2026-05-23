@@ -1043,7 +1043,7 @@ function getPos(e){
 function snapPt(x,y){ if(!snapEnabled||!gridEnabled) return {x:x,y:y}; var g=gridSize; return {x:Math.round(x/g)*g,y:Math.round(y/g)*g}; }
 
 // ── FILE LOADING ──
-// open-btn is now a <label> wrapping the file input — no JS click needed
+// open-btn is a <label> — file picker opens natively, no JS needed
 fileIn.addEventListener('change',function(e){ var f=e.target.files[0]; if(f) loadFile(f); e.target.value=''; });
 viewport.addEventListener('dragover',function(e){ e.preventDefault(); viewport.style.outline='2px dashed #6c63ff'; });
 viewport.addEventListener('dragleave',function(){ viewport.style.outline=''; });
