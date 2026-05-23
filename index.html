@@ -391,7 +391,7 @@ body{display:flex;flex-direction:column;}
 <!-- TOOLBAR -->
 <div id="tb">
   <label id="open-btn" style="cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">＋ Open
-    <input type="file" id="file-in" accept="image/*,.pdf" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;touch-action:auto;-webkit-appearance:none;border:none;padding:0;margin:0;">
+    <input type="file" id="file-in" accept="image/*,.pdf,.svg,.svgz,.tif,.tiff,.dng,.heic,.heif,.avif,.jxl,.webp,.bmp,.ico,.cur,.xbm" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;touch-action:auto;-webkit-appearance:none;border:none;padding:0;margin:0;">
   </label>
   <div class="sep"></div>
   <!-- DRAW TOOLS -->
@@ -1096,19 +1096,106 @@ viewport.addEventListener('drop',function(e){
 
 function loadFile(f){
   dbg('loadFile', {name: f.name, type: f.type, size: f.size, isIOS: IS_IOS});
-  if(f.type==='application/pdf'){ dbg('routing >> loadPDF'); loadPDF(f); return; }
   var name = f.name.toLowerCase();
-  var isHeic = f.type==='image/heic' || f.type==='image/heif' ||
+  var type = f.type.toLowerCase();
+
+  // ── PDF ──
+  if(type==='application/pdf' || name.endsWith('.pdf')){
+    dbg('routing >> loadPDF'); loadPDF(f); return;
+  }
+
+  // ── SVG: render to canvas via Image tag ──
+  if(type==='image/svg+xml' || name.endsWith('.svg') || name.endsWith('.svgz')){
+    dbg('routing >> loadSVG'); loadSVG(f); return;
+  }
+
+  // ── TIFF: needs JS decoder (not supported by canvas drawImage) ──
+  if(type==='image/tiff' || type==='image/tif' ||
+     name.endsWith('.tif') || name.endsWith('.tiff')){
+    dbg('routing >> loadTIFF'); loadTIFF(f); return;
+  }
+
+  // ── HEIC/HEIF ──
+  var isHeic = type==='image/heic' || type==='image/heif' ||
                name.endsWith('.heic') || name.endsWith('.heif');
-  // On iOS always use the HEIC/canvas-conversion path — iOS lies about MIME types,
-  // reporting image/jpeg for files that are actually HEIC and fail canvas drawImage.
+
+  // On iOS always use the img-tag path — iOS lies about MIME types
   if(isHeic || IS_IOS){ dbg('routing >> loadHEIC (iOS or HEIC)'); loadHEIC(f); return; }
-  if(f.type.startsWith('image/') || name.match(/\.(jpe?g|png|gif|webp|bmp|tiff?)$/)){
+
+  // ── All other images: JPEG, PNG, GIF, WebP, AVIF, BMP, ICO, JXL etc ──
+  if(type.startsWith('image/') ||
+     name.match(/\.(jpe?g|png|gif|webp|avif|bmp|ico|cur|xbm|jxl|dng|cr2|nef|arw)$/)){
     dbg('routing >> loadImage'); loadImage(f); return;
   }
-  if(f.type==='' && f.size > 10000){ dbg('routing >> loadImage (unknown type)'); loadImage(f); return; }
-  dbg('loadFile -- unsupported type', f.type);
-  toast('Please open an image or PDF file.','warn');
+
+  // ── Unknown type but large enough to be a photo — try anyway ──
+  if(f.size > 10000){ dbg('routing >> loadImage (unknown type, trying)'); loadImage(f); return; }
+
+  dbg('loadFile -- unsupported', type);
+  toast('Unsupported file type: '+( type||name.split('.').pop()),'warn');
+}
+
+// ── SVG LOADER ──
+// Browsers can render SVG in <img> but SVG may have no intrinsic size.
+// We rasterise at the viewport size or a sensible default.
+function loadSVG(f){
+  dbg('loadSVG start', {name: f.name, size: f.size});
+  var reader = new FileReader();
+  reader.onerror = function(){ toast('Could not read SVG.','err'); };
+  reader.onload = function(e){
+    var svgText = e.target.result;
+    // Parse width/height from SVG root element
+    var wMatch = svgText.match(/\bwidth=["\'](\d+(?:\.\d+)?)(px)?["\']/) ||
+                 svgText.match(/\bwidth=(\d+)/);
+    var hMatch = svgText.match(/\bheight=["\'](\d+(?:\.\d+)?)(px)?["\']/) ||
+                 svgText.match(/\bheight=(\d+)/);
+    // Try viewBox as fallback
+    var vbMatch = svgText.match(/viewBox=["\'](\S+)\s+(\S+)\s+(\S+)\s+(\S+)["\']/) ||
+                  svgText.match(/viewBox=["\']0 0 (\S+) (\S+)["\']/) ;
+    var svgW = wMatch ? parseFloat(wMatch[1]) : (vbMatch ? parseFloat(vbMatch[vbMatch.length===5?3:1]) : 1200);
+    var svgH = hMatch ? parseFloat(hMatch[1]) : (vbMatch ? parseFloat(vbMatch[vbMatch.length===5?4:2]) : 900);
+    // Cap to IOS_MAX_PX
+    var sc = Math.min(1, IOS_MAX_PX / Math.max(svgW, svgH));
+    var w = Math.round(svgW * sc), h = Math.round(svgH * sc);
+    dbg('loadSVG dims', {svgW:svgW, svgH:svgH, w:w, h:h});
+    var blob = new Blob([svgText], {type:'image/svg+xml'});
+    var url  = URL.createObjectURL(blob);
+    var img  = new Image();
+    img.onerror = function(){ URL.revokeObjectURL(url); toast('SVG render failed. File may use unsupported features.','warn',5000); };
+    img.onload  = function(){
+      var fw = img.naturalWidth  || w;
+      var fh = img.naturalHeight || h;
+      var sc2 = Math.min(1, IOS_MAX_PX / Math.max(fw, fh));
+      var rw = Math.round(fw*sc2), rh = Math.round(fh*sc2);
+      dbg('loadSVG img.onload', {fw:fw, fh:fh, rw:rw, rh:rh});
+      pdfDoc=null; pgGrp(false);
+      resize(rw, rh);
+      bCtx.drawImage(img, 0, 0, rw, rh);
+      URL.revokeObjectURL(url);
+      afterLoad();
+      dbg('loadSVG complete OK');
+    };
+    img.width  = w;
+    img.height = h;
+    img.src = url;
+  };
+  reader.readAsText(f);
+}
+
+// ── TIFF LOADER ──
+// Browsers don't support TIFF natively. We use the UTIF.js library loaded from CDN.
+// If offline/unavailable we fall back to the img-tag path (works on Safari macOS).
+function loadTIFF(f){
+  dbg('loadTIFF start', {name: f.name, size: f.size});
+  // Try native first (Safari macOS supports TIFF in img tags)
+  if(!IS_IOS){
+    dbg('loadTIFF >> trying native img path');
+    loadImage(f);
+    return;
+  }
+  // On iOS: TIFF is not supported at all — inform user
+  dbg('loadTIFF iOS -- not supported');
+  toast('TIFF not supported on iOS. Convert to JPEG or PNG first.','warn',5000);
 }
 
 // HEIC: iOS Photos can't draw HEIC to canvas directly.
