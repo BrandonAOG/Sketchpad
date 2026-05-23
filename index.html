@@ -1096,9 +1096,71 @@ viewport.addEventListener('drop',function(e){
 
 function loadFile(f){
   dbg('loadFile', {name: f.name, type: f.type, size: f.size});
-  if(f.type==='application/pdf'){ dbg('routing >> loadPDF'); loadPDF(f); }
-  else if(f.type.startsWith('image/')){ dbg('routing >> loadImage'); loadImage(f); }
-  else{ dbg('loadFile -- unsupported type', f.type); toast('Please open an image or PDF file.','warn'); }
+  if(f.type==='application/pdf'){ dbg('routing >> loadPDF'); loadPDF(f); return; }
+  // iOS Photos can return image/heic, image/heif, or even blank type
+  var name = f.name.toLowerCase();
+  var isHeic = f.type==='image/heic' || f.type==='image/heif' ||
+               name.endsWith('.heic') || name.endsWith('.heif');
+  if(isHeic){ dbg('routing >> loadHEIC'); loadHEIC(f); return; }
+  if(f.type.startsWith('image/') || name.match(/\.(jpe?g|png|gif|webp|bmp|tiff?)$/)){
+    dbg('routing >> loadImage'); loadImage(f); return;
+  }
+  // Last resort: if iOS gave us an empty type but it looks like a photo, try loading it anyway
+  if(f.type==='' && f.size > 10000){ dbg('routing >> loadImage (unknown type, trying anyway)'); loadImage(f); return; }
+  dbg('loadFile -- unsupported type', f.type);
+  toast('Please open an image or PDF file.','warn');
+}
+
+// HEIC: iOS Photos can't draw HEIC to canvas directly.
+// Strategy: load into an <img> tag — Safari CAN display HEIC in img elements —
+// then draw that img to an offscreen canvas to convert it to a raster we can use.
+function loadHEIC(f){
+  dbg('loadHEIC start', {name: f.name, size: f.size});
+  var url = URL.createObjectURL(f);
+  var img = new Image();
+  img.onerror = function(){ 
+    URL.revokeObjectURL(url);
+    dbg('loadHEIC img ERROR -- HEIC not supported in this browser');
+    toast('HEIC not supported. Export photo as JPEG from Photos app first.','warn',5000);
+  };
+  img.onload = function(){
+    dbg('loadHEIC img.onload', {naturalW: img.naturalWidth, naturalH: img.naturalHeight});
+    if(!img.naturalWidth || !img.naturalHeight){
+      URL.revokeObjectURL(url);
+      dbg('loadHEIC ERROR -- zero dimensions');
+      toast('Could not decode HEIC. Export as JPEG from Photos app.','warn',5000);
+      return;
+    }
+    // Convert: draw HEIC img onto a temp canvas, read back as JPEG data URL
+    var tmpC = document.createElement('canvas');
+    var sc = Math.min(1, IOS_MAX_PX / Math.max(img.naturalWidth, img.naturalHeight));
+    tmpC.width  = Math.round(img.naturalWidth  * sc);
+    tmpC.height = Math.round(img.naturalHeight * sc);
+    try{
+      tmpC.getContext('2d').drawImage(img, 0, 0, tmpC.width, tmpC.height);
+      var jpeg = tmpC.toDataURL('image/jpeg', 0.92);
+      dbg('loadHEIC converted to JPEG dataURL', {len: jpeg.length});
+      URL.revokeObjectURL(url);
+      // Now load the converted JPEG
+      var img2 = new Image();
+      img2.onload = function(){
+        dbg('loadHEIC img2.onload OK', {w: img2.naturalWidth, h: img2.naturalHeight});
+        pdfDoc=null; pgGrp(false);
+        resize(tmpC.width, tmpC.height);
+        bCtx.drawImage(img2, 0, 0, tmpC.width, tmpC.height);
+        afterLoad();
+        dbg('loadHEIC complete OK');
+      };
+      img2.onerror = function(){ dbg('loadHEIC img2 ERROR'); toast('HEIC conversion failed.','err'); };
+      img2.src = jpeg;
+    } catch(ex){
+      URL.revokeObjectURL(url);
+      dbg('loadHEIC canvas ERROR', ex.message);
+      toast('HEIC conversion failed: '+ex.message,'err');
+    }
+  };
+  img.src = url;
+  dbg('loadHEIC img.src set');
 }
 
 function loadImage(f){
