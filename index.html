@@ -30,7 +30,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans
 .tb-btn.active{background:rgba(108,99,255,.2);border-color:var(--acc);color:var(--acc2)}
 .tb-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;flex-shrink:0}
 .tb-btn .lbl{font-size:9.5px;color:inherit;white-space:nowrap;pointer-events:none;line-height:1;display:block}
-#open-btn{background:var(--acc);color:#fff;border-radius:var(--rad);padding:0 12px;height:36px;border:none;cursor:pointer;font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap}
+#open-btn-wrap{flex-shrink:0}#open-btn{display:inline-flex;align-items:center;justify-content:center;background:var(--acc);color:#fff;border-radius:var(--rad);padding:0 12px;height:36px;border:none;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;pointer-events:none;}
 /* line style group */
 .ls-group{display:flex;gap:2px;flex-shrink:0}
 .ls-btn{width:32px;height:32px;border-radius:6px;border:1.5px solid var(--b2);background:transparent;color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
@@ -390,9 +390,11 @@ body{display:flex;flex-direction:column;}
 
 <!-- TOOLBAR -->
 <div id="tb">
-  <label id="open-btn" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer;">＋ Open
-    <input type="file" id="file-in" accept="image/*,.pdf" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
-  </label>
+  <div id="open-btn-wrap" style="position:relative;flex-shrink:0;">
+    <span id="open-btn">＋ Open</span>
+    <input type="file" id="file-in" accept="image/*,.pdf"
+      style="position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;font-size:16px;z-index:10;">
+  </div>
   <div class="sep"></div>
   <!-- DRAW TOOLS -->
   <button class="tb-btn active" data-tool="pen"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg><span class="lbl">Pen</span></button>
