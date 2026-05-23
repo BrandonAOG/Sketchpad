@@ -1043,6 +1043,10 @@ function snapPt(x,y){ if(!snapEnabled||!gridEnabled) return {x:x,y:y}; var g=gri
 
 // ── FILE LOADING ──
 openBtn.addEventListener('click',function(){ fileIn.click(); });
+// iOS Safari blocks programmatic .click() on file inputs from touch event handlers
+// unless triggered directly from a user gesture. Using touchend ensures the gesture
+// is passed through even when the global touchmove suppressor is active.
+openBtn.addEventListener('touchend',function(e){ e.preventDefault(); e.stopPropagation(); fileIn.click(); });
 fileIn.addEventListener('change',function(e){ var f=e.target.files[0]; if(f) loadFile(f); e.target.value=''; });
 viewport.addEventListener('dragover',function(e){ e.preventDefault(); viewport.style.outline='2px dashed #6c63ff'; });
 viewport.addEventListener('dragleave',function(){ viewport.style.outline=''; });
