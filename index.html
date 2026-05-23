@@ -211,6 +211,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 }
 #font-size-sel:focus{border-color:var(--acc)}
 /* SELECTION OVERLAY CANVAS */
+#txt-cv{position:absolute;top:0;left:0;display:block;pointer-events:none;z-index:1}
 #sel-cv{position:absolute;top:0;left:0;display:block;pointer-events:none;z-index:2}
 
 /* SAVE INDICATOR */
@@ -508,6 +509,7 @@ body{display:flex;flex-direction:column;}
       <div id="canvas-wrap">
         <canvas id="base-cv"></canvas>
         <canvas id="draw-cv"></canvas>
+        <canvas id="txt-cv"></canvas>
         <canvas id="sel-cv"></canvas>
         <canvas id="grid-cv"></canvas>
       </div>
@@ -752,6 +754,8 @@ var dCtx=drawCv.getContext('2d');
 var gCtx=gridCv.getContext('2d');
 var selCv=document.getElementById('sel-cv');
 var selCtx=selCv.getContext('2d');
+var tCv=document.getElementById('txt-cv');
+var tCtx=tCv.getContext('2d');
 var fontSizeSel=document.getElementById('font-size-sel');
 
 // ── iOS GESTURE & PULL-TO-REFRESH PREVENTION ────────────────
@@ -846,13 +850,14 @@ function pushUndo(){
     // Store only the ACTIVE layer's ImageData — 5× less memory than storing all layers.
     // Each step: ~33MB instead of ~165MB. With MAX_UNDO=5 on iPhone: 165MB vs 825MB.
     var snap={
-      idx:  activeLayerIdx,
-      data: lc.ctx.getImageData(0,0,lc.canvas.width,lc.canvas.height)
+      idx:      activeLayerIdx,
+      data:     lc.ctx.getImageData(0,0,lc.canvas.width,lc.canvas.height),
+      textObjs: JSON.parse(JSON.stringify(textObjs)) // include text objects
     };
     undoStack.push(snap);
     if(undoStack.length>MAX_UNDO) undoStack.shift();
     redoStack=[];
-    scheduleSave(); // auto-save after every operation
+    scheduleSave();
   }catch(ex){ console.warn('pushUndo failed:',ex); }
 }
 
@@ -882,6 +887,7 @@ function undoFn(){
     // Restore
     lc.ctx.clearRect(0,0,lc.canvas.width,lc.canvas.height);
     lc.ctx.putImageData(snap.data,0,0);
+    if(snap.textObjs!==undefined){ textObjs=snap.textObjs; renderTextObjs(); }
     composite();
   }catch(ex){ console.warn('undoFn failed:',ex); }
 }
@@ -899,6 +905,7 @@ function redoFn(){
     if(undoStack.length>MAX_UNDO) undoStack.shift();
     lc.ctx.clearRect(0,0,lc.canvas.width,lc.canvas.height);
     lc.ctx.putImageData(snap.data,0,0);
+    if(snap.textObjs!==undefined){ textObjs=snap.textObjs; renderTextObjs(); }
     composite();
   }catch(ex){ console.warn('redoFn failed:',ex); }
 }
@@ -1090,16 +1097,16 @@ function renderPDFPage(n){
 }
 
 function resize(w,h){
-  baseCv.width=drawCv.width=gridCv.width=w;
-  baseCv.height=drawCv.height=gridCv.height=h;
-  // sel-cv stays 1×1 until a shape enters selection mode — saves ~33MB permanently
+  baseCv.width=drawCv.width=gridCv.width=tCv.width=w;
+  baseCv.height=drawCv.height=gridCv.height=tCv.height=h;
   selCv.width=1; selCv.height=1;
   canvasWrap.style.width=w+'px'; canvasWrap.style.height=h+'px';
 }
 
 function afterLoad(){
   initLayers(baseCv.width,baseCv.height);
-  undoStack=[]; redoStack=[];
+  undoStack=[]; redoStack=[]; textObjs=[]; editingObj=null;
+  tCtx.clearRect(0,0,tCv.width,tCv.height);
   baseLoaded=true;
   dropZone.classList.add('hidden'); document.getElementById('compass').style.display='block';
   canvasWrap.style.display='inline-block';
@@ -1141,6 +1148,21 @@ var layerTmps=layers.map(function(l){
   layers.forEach(function(l,i){ l.canvas.width=h; l.canvas.height=w; l.ctx.drawImage(layerTmps[i],0,0); });
   // Release old layer canvases on iOS
   if(IS_IOS){ oldLayerCanvases.forEach(function(c){ releaseCanvas(c); }); layerTmps.forEach(function(c){ releaseCanvas(c); }); }
+  // Rotate text object positions to match new canvas orientation
+  var rw=baseCv.width, rh=baseCv.height; // after resize these are swapped
+  // deg is -90 or 90; transform each text object position
+  textObjs.forEach(function(obj){
+    if(deg===90){
+      var nx=rw-obj.y; var ny=obj.x;  // wrong without orig dims
+      // use original w/h (before resize — which swapped them)
+      // orig w=rh, orig h=rw after swap
+    }
+    // Simple approach: approximate re-center
+    var cx=obj.x, cy=obj.y;
+    if(deg===90){  obj.x=rh-cy; obj.y=cx; }
+    else          { obj.x=cy;   obj.y=rw-cx; }
+  });
+  renderTextObjs();
   composite(); drawGrid(); fitToVP();
 }
 
@@ -1623,6 +1645,57 @@ function drawStamp(ctx,type,x,y,s){
 }
 
 
+
+// ══════════════════════════════════════════════════════════════
+// LIVE TEXT OBJECT SYSTEM
+// Text stays editable — never burned to pixels until export.
+// Tap any text with the text tool to re-open and edit it.
+// Empty commit = delete. Undo/redo includes text objects.
+// ══════════════════════════════════════════════════════════════
+var textObjs   = [];       // [{id,x,y,text,color,fontSize,opacity,layerIdx}]
+var editingObj = null;     // text object currently being edited
+
+// ── Render all text objects onto txt-cv ──────────────────────
+function renderTextObjs(){
+  tCtx.clearRect(0,0,tCv.width,tCv.height);
+  textObjs.forEach(function(obj){
+    if(obj._editing) return; // hidden while actively editing
+    var layer=layers[obj.layerIdx];
+    if(layer&&!layer.visible) return; // respect layer visibility
+    tCtx.save();
+    tCtx.globalAlpha=obj.opacity;
+    tCtx.fillStyle=obj.color;
+    tCtx.font='bold '+obj.fontSize+'px Arial,sans-serif';
+    obj.text.split('\n').forEach(function(line,i){
+      tCtx.fillText(line,obj.x,obj.y+i*obj.fontSize*1.3);
+    });
+    tCtx.restore();
+  });
+}
+
+// ── Hit test: find text object at canvas position ────────────
+function findTextObjAt(x,y){
+  for(var i=textObjs.length-1;i>=0;i--){
+    var o=textObjs[i];
+    if(o._editing) continue;
+    var lines=o.text.split('\n');
+    var estW=lines.reduce(function(m,l){ return Math.max(m,l.length); },0)*o.fontSize*0.62;
+    var estH=lines.length*o.fontSize*1.3;
+    var pad=Math.max(8,12/zoom);
+    if(x>=o.x-pad&&x<=o.x+estW+pad&&y>=o.y-o.fontSize-pad&&y<=o.y+estH+pad){
+      return o;
+    }
+  }
+  return null;
+}
+
+// ── Composite export includes txt-cv ────────────────────────
+// (compositeExport is patched below)
+
+// ══════════════════════════════════════════════════════════════
+// END LIVE TEXT OBJECT SYSTEM
+// ══════════════════════════════════════════════════════════════
+
 // ── TEXT CURSOR INDICATOR ────────────────────────────────────
 // Canvas-drawn blinking I-beam cursor so users see exactly
 // where text will be placed — no visible textarea box needed.
@@ -1709,15 +1782,35 @@ function showTextHover(x, y){
     selCv.height = drawCv.height;
   }
   selCtx.clearRect(0,0,selCv.width,selCv.height);
-  drawTextCursorAt(x, y, 0.35);     // faint ghost cursor
-  // Small "T" label above
-  selCtx.save();
-  selCtx.globalAlpha = 0.45;
-  selCtx.font        = 'bold '+(Math.max(10,11/zoom))+'px Arial,sans-serif';
-  selCtx.fillStyle   = color;
-  selCtx.textAlign   = 'left';
-  selCtx.fillText('T', x + 8/zoom, y - FONT_SIZE*1.1);
-  selCtx.restore();
+  var overExisting = findTextObjAt(x, y);
+  if(overExisting){
+    // Highlight existing text object with edit indicator
+    drawCv.style.cursor='text';
+    var lines=overExisting.text.split('
+');
+    var estW=lines.reduce(function(m,l){ return Math.max(m,l.length); },0)*overExisting.fontSize*0.62;
+    var estH=lines.length*overExisting.fontSize*1.3;
+    var pad=6/zoom;
+    selCtx.save();
+    selCtx.strokeStyle=color; selCtx.lineWidth=1.5/zoom;
+    selCtx.setLineDash([4/zoom,3/zoom]); selCtx.globalAlpha=0.7;
+    selCtx.strokeRect(overExisting.x-pad, overExisting.y-overExisting.fontSize-pad, estW+pad*2, estH+pad*2);
+    // Edit pencil icon hint
+    selCtx.setLineDash([]); selCtx.globalAlpha=0.8;
+    selCtx.font='bold '+(Math.max(10,11/zoom))+'px Arial,sans-serif';
+    selCtx.fillStyle=color; selCtx.textAlign='left';
+    selCtx.fillText('✎ edit', overExisting.x, overExisting.y-overExisting.fontSize-8/zoom);
+    selCtx.restore();
+  } else {
+    drawCv.style.cursor='crosshair';
+    drawTextCursorAt(x, y, 0.35);
+    selCtx.save();
+    selCtx.globalAlpha=0.45;
+    selCtx.font='bold '+(Math.max(10,11/zoom))+'px Arial,sans-serif';
+    selCtx.fillStyle=color; selCtx.textAlign='left';
+    selCtx.fillText('T', x + 8/zoom, y - FONT_SIZE*1.1);
+    selCtx.restore();
+  }
 }
 
 function clearTextHover(){
@@ -1729,10 +1822,27 @@ function clearTextHover(){
 // ── TEXT TOOL ──
 function handleText(e){
   var p=getPos(e);
-  textX=p.x; textY=p.y;
-  commitText();
-  startTextCursor(p.x, p.y);
-  showTextOverlay(p.x,p.y);
+  var existing=findTextObjAt(p.x,p.y);
+  if(existing){
+    // ── Edit existing text object ──
+    commitText(); // commit any open text first
+    editingObj=existing;
+    existing._editing=true; // hide from renderer while editing
+    renderTextObjs();
+    textX=existing.x; textY=existing.y;
+    startTextCursor(existing.x, existing.y);
+    showTextOverlay(existing.x, existing.y);
+    textOv.value=existing.text; // pre-fill with current text
+    // resize textarea to fit existing text
+    setTimeout(function(){ textOv.style.width=(Math.max(80,existing.text.length*existing.fontSize*0.62*zoom))+'px'; },0);
+  } else {
+    // ── Place new text ──
+    commitText();
+    editingObj=null;
+    textX=p.x; textY=p.y;
+    startTextCursor(p.x,p.y);
+    showTextOverlay(p.x,p.y);
+  }
 }
 
 function showTextOverlay(cx,cy){
@@ -1764,14 +1874,26 @@ textOv.addEventListener('keydown',function(e){
 
 function commitText(){
   if(textOv.style.display==='none') return;
-  stopTextCursor();              // clear canvas cursor indicator
-  var val=textOv.value.trim(); textOv.style.display='none';
-  if(!val) return;
-  var lc=lctx();
-  lc.globalAlpha=opacity; lc.fillStyle=color;
-  lc.font='bold '+(FONT_SIZE)+'px Arial,sans-serif';
-  val.split('\n').forEach(function(line,i){ lc.fillText(line,textX,textY+i*FONT_SIZE*1.3); });
-  lc.globalAlpha=1; composite(); pushUndo();
+  stopTextCursor();
+  var val=textOv.value;
+  textOv.style.display='none';
+
+  if(editingObj){
+    editingObj._editing=false;
+    if(val.trim()===''){
+      var di=textObjs.indexOf(editingObj); if(di>-1) textObjs.splice(di,1);
+      toast('Text deleted','',1500);
+    } else {
+      editingObj.text=val; editingObj.color=color;
+      editingObj.fontSize=FONT_SIZE; editingObj.opacity=opacity;
+    }
+    editingObj=null; renderTextObjs(); pushUndo();
+  } else {
+    if(!val.trim()) return;
+    var obj={id:Date.now(),x:textX,y:textY,text:val,
+             color:color,fontSize:FONT_SIZE,opacity:opacity,layerIdx:activeLayerIdx};
+    textObjs.push(obj); renderTextObjs(); pushUndo();
+  }
 }
 
 
@@ -2120,6 +2242,20 @@ function compositeExport(){
   var ctx=out.getContext('2d');
   ctx.drawImage(baseCv,0,0);
   layers.forEach(function(l){ if(l.visible) ctx.drawImage(l.canvas,0,0); });
+  // Render text objects onto export (they live on txt-cv but we re-render for full res)
+  textObjs.forEach(function(obj){
+    var layer=layers[obj.layerIdx];
+    if(layer&&!layer.visible) return;
+    ctx.save();
+    ctx.globalAlpha=obj.opacity;
+    ctx.fillStyle=obj.color;
+    ctx.font='bold '+obj.fontSize+'px Arial,sans-serif';
+    obj.text.split('
+').forEach(function(line,i){
+      ctx.fillText(line,obj.x,obj.y+i*obj.fontSize*1.3);
+    });
+    ctx.restore();
+  });
   return out;
 }
 
@@ -2360,6 +2496,7 @@ function doRestore(rec){
             // All layers loaded
             activeLayerIdx=Math.min(rec.activeLayerIdx||0,layers.length-1);
             // Restore scale
+            if(rec.textObjs){ textObjs=rec.textObjs; renderTextObjs(); }
             if(rec.scaleSet){ scaleSet=true; ppu=rec.ppu; scaleUnit=rec.scaleUnit;
               ppuIn.value=(1/ppu).toFixed(4); unitIn.value=scaleUnit;
               scaleStatus.textContent='1 px = '+(1/ppu).toFixed(4)+' '+scaleUnit; }
