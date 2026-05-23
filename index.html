@@ -18,9 +18,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f0f11;--surf:#1a1a1f;--surf2:#24242b;--b1:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.14);--txt:#f0f0f2;--txt2:#8888aa;--acc:#6c63ff;--acc2:#9d97ff;--rad:9px}
-html{position:fixed;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;-webkit-overflow-scrolling:none;}
+html{position:fixed;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-overflow-scrolling:none;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;height:100%;width:100%;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none;position:fixed;-webkit-overflow-scrolling:none}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;height:100%;width:100%;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none;position:fixed;touch-action:none;-webkit-overflow-scrolling:none}
 /* TOOLBAR */
 #tb{height:68px;background:var(--surf);border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:2px;padding:0 8px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;touch-action:pan-x;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 #tb::-webkit-scrollbar{display:none}
@@ -30,7 +30,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans
 .tb-btn.active{background:rgba(108,99,255,.2);border-color:var(--acc);color:var(--acc2)}
 .tb-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;flex-shrink:0}
 .tb-btn .lbl{font-size:9.5px;color:inherit;white-space:nowrap;pointer-events:none;line-height:1;display:block}
-#open-btn{background:var(--acc);color:#fff;border-radius:var(--rad);padding:0 12px;height:36px;border:none;cursor:pointer;font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap}
+#open-btn{background:var(--acc);color:#fff;border-radius:var(--rad);padding:0 12px;height:36px;border:none;cursor:pointer;font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap;touch-action:auto;-webkit-tap-highlight-color:transparent;user-select:none;}
 /* line style group */
 .ls-group{display:flex;gap:2px;flex-shrink:0}
 .ls-btn{width:32px;height:32px;border-radius:6px;border:1.5px solid var(--b2);background:transparent;color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
@@ -116,7 +116,7 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;bac
 .leg-swatch{width:18px;height:4px;border-radius:2px;flex-shrink:0}
 .leg-name{font-size:11px;color:var(--txt2)}
 /* VIEWPORT */
-#viewport{flex:1;overflow:hidden;position:relative;cursor:default;touch-action:none;}
+#viewport{flex:1;overflow:hidden;position:relative;cursor:default}
 #scene{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 #canvas-wrap{position:relative;display:none;border-radius:3px;overflow:hidden;box-shadow:0 8px 48px rgba(0,0,0,.7)}
 #base-cv{display:block}
@@ -390,8 +390,9 @@ body{display:flex;flex-direction:column;}
 
 <!-- TOOLBAR -->
 <div id="tb">
-  <label id="open-btn" for="file-in">＋ Open</label>
-  <input type="file" id="file-in" accept="image/*,.pdf" style="position:absolute;left:-9999px;">
+  <label id="open-btn" style="cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">＋ Open
+    <input type="file" id="file-in" accept="image/*,.pdf" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;touch-action:auto;-webkit-appearance:none;border:none;padding:0;margin:0;">
+  </label>
   <div class="sep"></div>
   <!-- DRAW TOOLS -->
   <button class="tb-btn active" data-tool="pen"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg><span class="lbl">Pen</span></button>
@@ -632,13 +633,6 @@ body{display:flex;flex-direction:column;}
 </div>
 
 <div id="toast"></div>
-<div id="dbg-panel" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#000;border-top:2px solid #0f0;font-family:monospace;font-size:12px;">
-  <div style="display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #333;">
-    <span style="color:#0f0;font-weight:bold;">DEBUG CONSOLE</span>
-    <button onclick="document.getElementById('dbg-panel').style.display='none'" style="background:#333;color:#fff;border:none;padding:2px 8px;cursor:pointer;">hide</button>
-  </div>
-  <div id="dbg-log" style="height:150px;overflow-y:auto;padding:4px 8px;color:#0f0;"></div>
-</div>
 
 <!-- SHORTCUTS OVERLAY -->
 <div id="shortcuts">
@@ -675,14 +669,8 @@ body{display:flex;flex-direction:column;}
 (function(){
 'use strict';
 
-setTimeout(function(){ dbg('DEBUG READY - tap Open to test'); }, 500);
-window.onerror=function(msg,src,line,col,err){
-  var el=document.getElementById('dbg-log');
-  if(el){ var d=document.createElement('div'); d.style.color='#f00'; d.textContent='ERROR: '+msg+' (line '+line+')'; el.appendChild(d); }
-};
-
 // ── iOS DETECTION & CANVAS MEMORY PROTECTION ────────────────
-// iPads were fine — only apply aggressive caps to iPhone.
+// iPads were fine -- only apply aggressive caps to iPhone.
 // iPadOS 13+ reports "Macintosh" with maxTouchPoints > 1.
 // ── TOAST SYSTEM ─────────────────────────────────────────────
 var _toastTimer;
@@ -786,7 +774,7 @@ document.addEventListener('touchmove', function(e){
     if(e.target.closest('#tb')) return;          // toolbar horizontal scroll
     if(e.target.closest('#sb')) return;          // subbar horizontal scroll
     if(e.target.closest('input[type=range]')) return;
-    if(e.target.closest('#text-ov')) return;     // text input — let iOS handle it
+    if(e.target.closest('#text-ov')) return;     // text input -- let iOS handle it
   }
   if(e.cancelable) e.preventDefault();
 },{passive:false});
@@ -860,7 +848,7 @@ function pushUndo(){
   try{
     var lc=layers[activeLayerIdx];
     if(!lc||!lc.canvas.width||!lc.canvas.height) return;
-    // Store only the ACTIVE layer's ImageData — 5× less memory than storing all layers.
+    // Store only the ACTIVE layer's ImageData -- 5× less memory than storing all layers.
     // Each step: ~33MB instead of ~165MB. With MAX_UNDO=5 on iPhone: 165MB vs 825MB.
     var snap={
       idx:      activeLayerIdx,
@@ -1055,81 +1043,129 @@ function getPos(e){
 function snapPt(x,y){ if(!snapEnabled||!gridEnabled) return {x:x,y:y}; var g=gridSize; return {x:Math.round(x/g)*g,y:Math.round(y/g)*g}; }
 
 // ── FILE LOADING ──
-fileIn.addEventListener('change',function(e){
-  var f=e.target.files[0];
-  dbg('change fired, files='+e.target.files.length+(f?' name='+f.name+' type='+f.type:''));
-  if(f) loadFile(f);
+// ── DEBUG LOGGING ──
+var DBG = true;
+function dbg(label, data){
+  if(!DBG) return;
+  var msg = '[AOG DEBUG] ' + label;
+  if(data !== undefined) msg += ' >> ' + JSON.stringify(data);
+  console.log(msg);
+}
+
+// Log open-btn clicks
+openBtn.addEventListener('click', function(e){
+  dbg('open-btn CLICK', {type: e.type, target: e.target.tagName, isTrusted: e.isTrusted});
+});
+openBtn.addEventListener('touchstart', function(e){
+  dbg('open-btn TOUCHSTART', {touches: e.touches.length, isTrusted: e.isTrusted});
+}, {passive:true});
+
+// Log file-in events
+fileIn.addEventListener('click', function(e){
+  dbg('file-in CLICK fired', {isTrusted: e.isTrusted});
+});
+fileIn.addEventListener('touchstart', function(e){
+  dbg('file-in TOUCHSTART', {touches: e.touches.length});
+}, {passive:true});
+fileIn.addEventListener('focus', function(){
+  dbg('file-in FOCUS -- picker should open now');
+});
+fileIn.addEventListener('cancel', function(){
+  dbg('file-in CANCEL -- user dismissed picker without selecting');
+});
+fileIn.addEventListener('change', function(e){
+  dbg('file-in CHANGE fired', {filesLength: e.target.files.length});
+  if(e.target.files.length === 0){
+    dbg('file-in CHANGE -- no files in list');
+    return;
+  }
+  var f = e.target.files[0];
+  dbg('file-in CHANGE -- file selected', {name: f.name, type: f.type, size: f.size});
+  loadFile(f);
   e.target.value='';
 });
 
-var _origLoadImage = null;
-var _origLoadFile = null;
-
-function dbg(msg){
-  var el=document.getElementById('dbg-log');
-  if(!el) return;
-  var d=document.createElement('div');
-  d.textContent=new Date().toISOString().slice(11,19)+' '+msg;
-  el.appendChild(d);
-  el.scrollTop=el.scrollHeight;
-}
 viewport.addEventListener('dragover',function(e){ e.preventDefault(); viewport.style.outline='2px dashed #6c63ff'; });
 viewport.addEventListener('dragleave',function(){ viewport.style.outline=''; });
-viewport.addEventListener('drop',function(e){ e.preventDefault(); viewport.style.outline=''; var f=e.dataTransfer.files[0]; if(f) loadFile(f); });
+viewport.addEventListener('drop',function(e){
+  e.preventDefault(); viewport.style.outline='';
+  var f=e.dataTransfer.files[0];
+  dbg('DROP event', {name: f&&f.name, type: f&&f.type});
+  if(f) loadFile(f);
+});
 
 function loadFile(f){
-  dbg('loadFile: type='+f.type);
-  if(f.type==='application/pdf'){ dbg('-> loadPDF'); loadPDF(f); }
-  else if(f.type.startsWith('image/')){ dbg('-> loadImage'); loadImage(f); }
-  else{ dbg('-> unknown type'); toast('Please open an image or PDF file.','warn'); }
+  dbg('loadFile', {name: f.name, type: f.type, size: f.size});
+  if(f.type==='application/pdf'){ dbg('routing >> loadPDF'); loadPDF(f); }
+  else if(f.type.startsWith('image/')){ dbg('routing >> loadImage'); loadImage(f); }
+  else{ dbg('loadFile -- unsupported type', f.type); toast('Please open an image or PDF file.','warn'); }
 }
 
 function loadImage(f){
-  dbg('loadImage called');
+  dbg('loadImage start', {name: f.name});
   var url=URL.createObjectURL(f);
+  dbg('loadImage objectURL created', url.substring(0,60));
   var img=new Image();
-  img.onerror=function(){ dbg('img.onerror fired'); };
+  img.onerror=function(e){ dbg('loadImage IMG ERROR', String(e)); };
   img.onload=function(){
-    dbg('img.onload fired w='+img.width+' h='+img.height);
+    dbg('loadImage img.onload', {naturalW: img.naturalWidth, naturalH: img.naturalHeight});
     pdfDoc=null; pgGrp(false);
-    // Cap canvas size on iOS to stay under the ~384MB canvas memory limit
     var scale=Math.min(1, IOS_MAX_PX/Math.max(img.width,img.height));
     var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+    dbg('loadImage resize', {scale: scale, w: w, h: h});
     resize(w,h);
     bCtx.drawImage(img,0,0,w,h);
+    dbg('loadImage drawImage done');
     afterLoad();
     URL.revokeObjectURL(url);
+    dbg('loadImage complete OK');
   };
   img.src=url;
+  dbg('loadImage img.src set');
 }
 
 function loadPDF(f){
-  if(typeof pdfjsLib==='undefined'){ toast('PDF support requires an internet connection.','warn'); return; }
+  dbg('loadPDF start', {name: f.name});
+  if(typeof pdfjsLib==='undefined'){
+    dbg('loadPDF ERROR -- pdfjsLib undefined (offline?)');
+    toast('PDF support requires an internet connection.','warn');
+    return;
+  }
+  dbg('loadPDF pdfjsLib available OK');
   var url=URL.createObjectURL(f);
+  dbg('loadPDF objectURL created');
   pdfjsLib.getDocument(url).promise.then(function(doc){
+    dbg('loadPDF document loaded', {numPages: doc.numPages});
     pdfDoc=doc; currentPage=1; pgGrp(true);
-    // Revoke AFTER document is loaded (not after page is rendered)
     URL.revokeObjectURL(url);
     renderPDFPage(1);
-  }).catch(function(err){ toast('PDF error: '+err.message,'err'); URL.revokeObjectURL(url); });
+  }).catch(function(err){
+    dbg('loadPDF ERROR', err.message);
+    toast('PDF error: '+err.message,'err');
+    URL.revokeObjectURL(url);
+  });
 }
 
 function renderPDFPage(n){
+  dbg('renderPDFPage', {page: n});
   pdfDoc.getPage(n).then(function(page){
     var vp1=page.getViewport({scale:1});
     var sc=Math.min(IOS_MAX_PX/vp1.width,2);
     var vp=page.getViewport({scale:sc});
     var w=Math.round(vp.width),h=Math.round(vp.height);
+    dbg('renderPDFPage viewport', {scale: sc, w: w, h: h});
     resize(w,h);
     page.render({canvasContext:bCtx,viewport:vp}).promise.then(function(){
+      dbg('renderPDFPage render complete OK');
       afterLoad();
       pgInfo.textContent=n+'/'+pdfDoc.numPages;
       btnPrev.disabled=n<=1; btnNext.disabled=n>=pdfDoc.numPages;
     });
-  });
+  }).catch(function(err){ dbg('renderPDFPage ERROR', err.message); });
 }
 
 function resize(w,h){
+  dbg('resize', {w:w, h:h});
   baseCv.width=drawCv.width=gridCv.width=tCv.width=w;
   baseCv.height=drawCv.height=gridCv.height=tCv.height=h;
   selCv.width=1; selCv.height=1;
@@ -1137,6 +1173,7 @@ function resize(w,h){
 }
 
 function afterLoad(){
+  dbg('afterLoad start', {canvasW: baseCv.width, canvasH: baseCv.height});
   initLayers(baseCv.width,baseCv.height);
   undoStack=[]; redoStack=[]; textObjs=[]; editingObj=null;
   tCtx.clearRect(0,0,tCv.width,tCv.height);
@@ -1147,8 +1184,9 @@ function afterLoad(){
   pgGrp(!!pdfDoc);
   drawGrid();
   fitToVP();
-  toast('File loaded — '+(IS_IPHONE?'iPhone cap applied':'ready to annotate'),'ok',2000);
-  clearSave(); scheduleSave(); // start fresh save for this file
+  dbg('afterLoad complete OK');
+  toast('File loaded -- '+(IS_IPHONE?'iPhone cap applied':'ready to annotate'),'ok',2000);
+  clearSave(); scheduleSave();
 }
 
 function pgGrp(show){
@@ -1187,7 +1225,7 @@ var layerTmps=layers.map(function(l){
   textObjs.forEach(function(obj){
     if(deg===90){
       var nx=rw-obj.y; var ny=obj.x;  // wrong without orig dims
-      // use original w/h (before resize — which swapped them)
+      // use original w/h (before resize -- which swapped them)
       // orig w=rh, orig h=rw after swap
     }
     // Simple approach: approximate re-center
@@ -1263,7 +1301,7 @@ function onDown(e){
                opacity:selectedShape.opacity,fill:selectedShape.fill,lineStyle:selectedShape.lineStyle}};
       return;
     }
-    // Clicked outside — commit and fall through to new draw
+    // Clicked outside -- commit and fall through to new draw
     commitSelection();
   }
 
@@ -1297,10 +1335,10 @@ function onMove(e){
       selectedShape.cx=orig.cx+(tp.x-selDragStart.x);
       selectedShape.cy=orig.cy+(tp.y-selDragStart.y);
     } else if(selHandle===8){
-      // Rotate — angle from center to mouse, offset by 90°
+      // Rotate -- angle from center to mouse, offset by 90°
       selectedShape.angle=Math.atan2(tp.y-selectedShape.cy, tp.x-selectedShape.cx)+Math.PI/2;
     } else {
-      // Resize — work in local coordinate space
+      // Resize -- work in local coordinate space
       var cos=Math.cos(-orig.angle), sin=Math.sin(-orig.angle);
       var lx=(tp.x-orig.cx)*cos-(tp.y-orig.cy)*sin;
       var ly=(tp.x-orig.cx)*sin+(tp.y-orig.cy)*cos;
@@ -1343,7 +1381,7 @@ function onUp(e){
   }
   if(!drawing) return;
   drawing=false;
-  // Reset path on display canvas after every stroke — prevents stale
+  // Reset path on display canvas after every stroke -- prevents stale
   // path from connecting to the start of the next stroke
   dCtx.beginPath();
   var p=snapPt(getPos(e).x,getPos(e).y);
@@ -1419,19 +1457,19 @@ function drawCloud(ctx,x1,y1,x2,y2){
   var minY=Math.min(y1,y2),maxY=Math.max(y1,y2);
   var bumpR=Math.max(8,Math.min(18,Math.min(maxX-minX,maxY-minY)/6));
   ctx.beginPath();
-  // Bottom L→R
+  // Bottom L>>R
   var steps=Math.max(2,Math.round((maxX-minX)/(bumpR*2)));
   var step=(maxX-minX)/steps;
   for(var i=0;i<steps;i++) ctx.arc(minX+step*i+step/2,maxY,step/2,Math.PI,0,false);
-  // Right T→B
+  // Right T>>B
   steps=Math.max(2,Math.round((maxY-minY)/(bumpR*2)));
   step=(maxY-minY)/steps;
   for(var i=0;i<steps;i++) ctx.arc(maxX,minY+step*i+step/2,step/2,-Math.PI/2,Math.PI/2,false);
-  // Top R→L
+  // Top R>>L
   steps=Math.max(2,Math.round((maxX-minX)/(bumpR*2)));
   step=(maxX-minX)/steps;
   for(var i=steps;i>0;i--) ctx.arc(minX+step*i-step/2,minY,step/2,0,Math.PI,false);
-  // Left B→T
+  // Left B>>T
   steps=Math.max(2,Math.round((maxY-minY)/(bumpR*2)));
   step=(maxY-minY)/steps;
   for(var i=steps;i>0;i--) ctx.arc(minX,minY+step*i-step/2,step/2,Math.PI/2,-Math.PI/2,false);
@@ -1617,7 +1655,7 @@ function handleLeaderClick(x,y,e){
     lc.moveTo(leaderP1x,leaderP1y);
     lc.lineTo(leaderP1x-hw*Math.cos(ang+Math.PI/6),leaderP1y-hw*Math.sin(ang+Math.PI/6));
     lc.stroke();
-    // horizontal shoulder — direction based on which half of canvas we're on
+    // horizontal shoulder -- direction based on which half of canvas we're on
     var shoulderDir = (x > baseCv.width/2) ? -1 : 1;
     var shoulderLen = 60;
     lc.beginPath(); lc.moveTo(x,y); lc.lineTo(x+shoulderLen*shoulderDir,y); lc.stroke();
@@ -1681,7 +1719,7 @@ function drawStamp(ctx,type,x,y,s){
 
 // ══════════════════════════════════════════════════════════════
 // LIVE TEXT OBJECT SYSTEM
-// Text stays editable — never burned to pixels until export.
+// Text stays editable -- never burned to pixels until export.
 // Tap any text with the text tool to re-open and edit it.
 // Empty commit = delete. Undo/redo includes text objects.
 // ══════════════════════════════════════════════════════════════
@@ -1731,7 +1769,7 @@ function findTextObjAt(x,y){
 
 // ── TEXT CURSOR INDICATOR ────────────────────────────────────
 // Canvas-drawn blinking I-beam cursor so users see exactly
-// where text will be placed — no visible textarea box needed.
+// where text will be placed -- no visible textarea box needed.
 var _txtCursorTimer  = null;
 var _txtCursorBlink  = false;
 var _txtCursorActive = false;
@@ -1808,7 +1846,7 @@ function stopTextCursor(){
   if(selCv.width > 1){ selCv.width=1; selCv.height=1; }
 }
 
-// Hover indicator — faint cursor following mouse when text tool selected
+// Hover indicator -- faint cursor following mouse when text tool selected
 function showTextHover(x, y){
   if(selCv.width !== drawCv.width || selCv.height !== drawCv.height){
     selCv.width  = drawCv.width;
@@ -1819,8 +1857,7 @@ function showTextHover(x, y){
   if(overExisting){
     // Highlight existing text object with edit indicator
     drawCv.style.cursor='text';
-    var lines=overExisting.text.split('
-');
+    var lines=overExisting.text.split('\n');
     var estW=lines.reduce(function(m,l){ return Math.max(m,l.length); },0)*overExisting.fontSize*0.62;
     var estH=lines.length*overExisting.fontSize*1.3;
     var pad=6/zoom;
@@ -1832,7 +1869,7 @@ function showTextHover(x, y){
     selCtx.setLineDash([]); selCtx.globalAlpha=0.8;
     selCtx.font='bold '+(Math.max(10,11/zoom))+'px Arial,sans-serif';
     selCtx.fillStyle=color; selCtx.textAlign='left';
-    selCtx.fillText('✎ edit', overExisting.x, overExisting.y-overExisting.fontSize-8/zoom);
+    selCtx.fillText('edit edit', overExisting.x, overExisting.y-overExisting.fontSize-8/zoom);
     selCtx.restore();
   } else {
     drawCv.style.cursor='crosshair';
@@ -2057,7 +2094,7 @@ function renderSelection(){
   handles.forEach(function(h,i){
     selCtx.save();
     if(i===8){
-      // Rotation handle — gold circle
+      // Rotation handle -- gold circle
       selCtx.beginPath(); selCtx.arc(h.x,h.y,hs*0.65,0,Math.PI*2);
       selCtx.fillStyle='#FBBF24'; selCtx.strokeStyle='#fff';
       selCtx.lineWidth=lw*1.5; selCtx.fill(); selCtx.stroke();
@@ -2068,7 +2105,7 @@ function renderSelection(){
       selCtx.arc(h.x,h.y,ar,Math.PI*0.2,Math.PI*1.8,false);
       selCtx.stroke();
     } else {
-      // Resize handle — white rounded square
+      // Resize handle -- white rounded square
       var corner=hs*0.25;
       selCtx.fillStyle='#fff'; selCtx.strokeStyle='#00D4FF';
       selCtx.lineWidth=lw*1.5;
@@ -2283,8 +2320,7 @@ function compositeExport(){
     ctx.globalAlpha=obj.opacity;
     ctx.fillStyle=obj.color;
     ctx.font='bold '+obj.fontSize+'px Arial,sans-serif';
-    obj.text.split('
-').forEach(function(line,i){
+    obj.text.split('\n').forEach(function(line,i){
       ctx.fillText(line,obj.x,obj.y+i*obj.fontSize*1.3);
     });
     ctx.restore();
@@ -2352,14 +2388,14 @@ btnPrint.addEventListener('click',function(){
 
 
 // ══════════════════════════════════════════════════════════════
-// AUTO-SAVE ENGINE — IndexedDB
+// AUTO-SAVE ENGINE -- IndexedDB
 // Saves after every operation. Survives page crashes, iOS kills,
 // Safari background termination. Restores on next open.
 // ══════════════════════════════════════════════════════════════
 
 var SAVE_DB_NAME    = 'aog_annotator_v1';
 var SAVE_STORE      = 'autosave';
-var SAVE_DEBOUNCE   = IS_IPHONE ? 5000 : 2500; // longer on iPhone — gives iOS time to free memory after drawing
+var SAVE_DEBOUNCE   = IS_IPHONE ? 5000 : 2500; // longer on iPhone -- gives iOS time to free memory after drawing
 var _saveDb         = null;
 var _saveTimer      = null;
 var _saveIndicator  = document.getElementById('save-indicator');
@@ -2369,7 +2405,7 @@ function setSaveStatus(status){ // 'saving' | 'saved' | 'unsaved' | 'error'
   if(!_saveIndicator) return;
   _saveIndicator.className = status;
   _saveIndicator.title = {
-    saving:  'Saving…',
+    saving:  'Saving...',
     saved:   'All changes saved',
     unsaved: 'Unsaved changes',
     error:   'Auto-save unavailable'
@@ -2391,7 +2427,7 @@ function initSaveDB(cb){
   }catch(ex){ setSaveStatus('error'); }
 }
 
-// Perform the save — layers are encoded ONE AT A TIME with a gap between each.
+// Perform the save -- layers are encoded ONE AT A TIME with a gap between each.
 // Encoding all 5 canvases at once creates a ~165MB memory spike on iPhone
 // which combined with zoom overhead pushes past the iOS WebKit limit and crashes.
 // Sequential encoding with 150ms gaps lets iOS free the previous buffer first.
@@ -2428,7 +2464,7 @@ function doSave(){
 
 function encodeLayerSequential(i, record){
   if(i >= layers.length){
-    // All layers encoded — write to IndexedDB
+    // All layers encoded -- write to IndexedDB
     writeSessionRecord(record);
     return;
   }
@@ -2493,7 +2529,7 @@ function checkForSavedSession(){
                                 'Saved '+Math.round(ago/86400000)+' day(s) ago';
       var nLayers=rec.layers?rec.layers.length:0;
       document.getElementById('restore-meta').innerHTML=
-        agoStr+'<br>'+nLayers+' layer'+(nLayers!==1?'s':'')+' · '+
+        agoStr+'<br>'+nLayers+' layer'+(nLayers!==1?'s':'')+' . '+
         (rec.scaleSet?'Scale: 1px='+rec.ppu.toFixed(4)+rec.scaleUnit:'No scale set');
       var overlay=document.getElementById('restore-overlay');
       var dlg    =document.getElementById('restore-dlg');
@@ -2545,7 +2581,7 @@ function doRestore(rec){
             pgGrp(false);
             drawGrid(); renderLayers(); composite(); fitToVP();
             setSaveStatus('saved');
-            toast('Session restored ✓','ok',3000);
+            toast('Session restored OK','ok',3000);
           }
         };
         li.onerror=function(){
@@ -2704,10 +2740,6 @@ if('serviceWorker' in navigator){
     }
   });
 }
-</script>
-<script>
-// Totally standalone test - no dependencies
-document.getElementById('dbg-log').innerHTML = '<div style="color:lime">JS IS RUNNING</div>';
 </script>
 </body>
 </html>
