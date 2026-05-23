@@ -30,7 +30,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans
 .tb-btn.active{background:rgba(108,99,255,.2);border-color:var(--acc);color:var(--acc2)}
 .tb-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;flex-shrink:0}
 .tb-btn .lbl{font-size:9.5px;color:inherit;white-space:nowrap;pointer-events:none;line-height:1;display:block}
-#open-btn-wrap{flex-shrink:0}#open-btn{display:inline-flex;align-items:center;justify-content:center;background:var(--acc);color:#fff;border-radius:var(--rad);padding:0 12px;height:36px;border:none;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;pointer-events:none;}
+#open-btn{background:var(--acc);color:#fff;border-radius:var(--rad);padding:0 12px;height:36px;border:none;cursor:pointer;font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap}
 /* line style group */
 .ls-group{display:flex;gap:2px;flex-shrink:0}
 .ls-btn{width:32px;height:32px;border-radius:6px;border:1.5px solid var(--b2);background:transparent;color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
@@ -390,11 +390,8 @@ body{display:flex;flex-direction:column;}
 
 <!-- TOOLBAR -->
 <div id="tb">
-  <div id="open-btn-wrap" style="position:relative;flex-shrink:0;">
-    <span id="open-btn">＋ Open</span>
-    <input type="file" id="file-in" accept="image/*,.pdf"
-      style="position:absolute;inset:0;width:100%;height:100%;opacity:0.01;cursor:pointer;font-size:16px;z-index:10;">
-  </div>
+  <label id="open-btn" for="file-in">＋ Open</label>
+  <input type="file" id="file-in" accept="image/*,.pdf" style="position:absolute;left:-9999px;">
   <div class="sep"></div>
   <!-- DRAW TOOLS -->
   <button class="tb-btn active" data-tool="pen"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg><span class="lbl">Pen</span></button>
@@ -635,6 +632,13 @@ body{display:flex;flex-direction:column;}
 </div>
 
 <div id="toast"></div>
+<div id="dbg-panel" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#000;border-top:2px solid #0f0;font-family:monospace;font-size:12px;">
+  <div style="display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #333;">
+    <span style="color:#0f0;font-weight:bold;">DEBUG CONSOLE</span>
+    <button onclick="document.getElementById('dbg-panel').style.display='none'" style="background:#333;color:#fff;border:none;padding:2px 8px;cursor:pointer;">hide</button>
+  </div>
+  <div id="dbg-log" style="height:150px;overflow-y:auto;padding:4px 8px;color:#0f0;"></div>
+</div>
 
 <!-- SHORTCUTS OVERLAY -->
 <div id="shortcuts">
@@ -670,6 +674,12 @@ body{display:flex;flex-direction:column;}
 <script>
 (function(){
 'use strict';
+
+setTimeout(function(){ dbg('DEBUG READY - tap Open to test'); }, 500);
+window.onerror=function(msg,src,line,col,err){
+  var el=document.getElementById('dbg-log');
+  if(el){ var d=document.createElement('div'); d.style.color='#f00'; d.textContent='ERROR: '+msg+' (line '+line+')'; el.appendChild(d); }
+};
 
 // ── iOS DETECTION & CANVAS MEMORY PROTECTION ────────────────
 // iPads were fine — only apply aggressive caps to iPhone.
@@ -1044,53 +1054,43 @@ function getPos(e){
 }
 function snapPt(x,y){ if(!snapEnabled||!gridEnabled) return {x:x,y:y}; var g=gridSize; return {x:Math.round(x/g)*g,y:Math.round(y/g)*g}; }
 
-// ── DEBUG OVERLAY ──
-(function(){
-  var dbg=document.createElement('div');
-  dbg.id='dbg';
-  dbg.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:9999;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:6px 8px;max-height:180px;overflow-y:auto;pointer-events:none;';
-  document.body.appendChild(dbg);
-  window._dbg=function(msg){
-    var line=document.createElement('div');
-    line.textContent=new Date().toISOString().slice(11,23)+' '+msg;
-    dbg.appendChild(line);
-    dbg.scrollTop=dbg.scrollHeight;
-    console.log('[DBG]',msg);
-  };
-  window.onerror=function(msg,src,ln,col,err){
-    window._dbg('ERROR: '+msg+' (line '+ln+')');
-  };
-})();
-window._dbg('Page loaded. UA='+navigator.userAgent.slice(0,60));
-
 // ── FILE LOADING ──
 fileIn.addEventListener('change',function(e){
-  window._dbg('change fired, files='+e.target.files.length);
   var f=e.target.files[0];
-  if(f){
-    window._dbg('file: '+f.name+' | type='+f.type+' | size='+f.size);
-    loadFile(f);
-  } else {
-    window._dbg('change fired but no file');
-  }
+  dbg('change fired, files='+e.target.files.length+(f?' name='+f.name+' type='+f.type:''));
+  if(f) loadFile(f);
   e.target.value='';
 });
-fileIn.addEventListener('click', function(){ window._dbg('input clicked'); });
-fileIn.addEventListener('touchend', function(){ window._dbg('input touchend'); },{passive:true});
+
+var _origLoadImage = null;
+var _origLoadFile = null;
+
+function dbg(msg){
+  var el=document.getElementById('dbg-log');
+  if(!el) return;
+  var d=document.createElement('div');
+  d.textContent=new Date().toISOString().slice(11,19)+' '+msg;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
 viewport.addEventListener('dragover',function(e){ e.preventDefault(); viewport.style.outline='2px dashed #6c63ff'; });
 viewport.addEventListener('dragleave',function(){ viewport.style.outline=''; });
 viewport.addEventListener('drop',function(e){ e.preventDefault(); viewport.style.outline=''; var f=e.dataTransfer.files[0]; if(f) loadFile(f); });
 
 function loadFile(f){
-  if(f.type==='application/pdf') loadPDF(f);
-  else if(f.type.startsWith('image/')) loadImage(f);
-  else toast('Please open an image or PDF file.','warn');
+  dbg('loadFile: type='+f.type);
+  if(f.type==='application/pdf'){ dbg('-> loadPDF'); loadPDF(f); }
+  else if(f.type.startsWith('image/')){ dbg('-> loadImage'); loadImage(f); }
+  else{ dbg('-> unknown type'); toast('Please open an image or PDF file.','warn'); }
 }
 
 function loadImage(f){
+  dbg('loadImage called');
   var url=URL.createObjectURL(f);
   var img=new Image();
+  img.onerror=function(){ dbg('img.onerror fired'); };
   img.onload=function(){
+    dbg('img.onload fired w='+img.width+' h='+img.height);
     pdfDoc=null; pgGrp(false);
     // Cap canvas size on iOS to stay under the ~384MB canvas memory limit
     var scale=Math.min(1, IOS_MAX_PX/Math.max(img.width,img.height));
@@ -2704,6 +2704,10 @@ if('serviceWorker' in navigator){
     }
   });
 }
+</script>
+<script>
+// Totally standalone test - no dependencies
+document.getElementById('dbg-log').innerHTML = '<div style="color:lime">JS IS RUNNING</div>';
 </script>
 </body>
 </html>
