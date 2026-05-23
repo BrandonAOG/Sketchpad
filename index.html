@@ -1102,26 +1102,40 @@ function loadFile(f){
 }
 
 function loadImage(f){
-  dbg('loadImage start', {name: f.name});
-  var url=URL.createObjectURL(f);
-  dbg('loadImage objectURL created', url.substring(0,60));
-  var img=new Image();
-  img.onerror=function(e){ dbg('loadImage IMG ERROR', String(e)); };
-  img.onload=function(){
-    dbg('loadImage img.onload', {naturalW: img.naturalWidth, naturalH: img.naturalHeight});
-    pdfDoc=null; pgGrp(false);
-    var scale=Math.min(1, IOS_MAX_PX/Math.max(img.width,img.height));
-    var w=Math.round(img.width*scale), h=Math.round(img.height*scale);
-    dbg('loadImage resize', {scale: scale, w: w, h: h});
-    resize(w,h);
-    bCtx.drawImage(img,0,0,w,h);
-    dbg('loadImage drawImage done');
-    afterLoad();
-    URL.revokeObjectURL(url);
-    dbg('loadImage complete OK');
+  dbg('loadImage start', {name: f.name, type: f.type, size: f.size});
+  // FileReader is more reliable than createObjectURL on iOS Safari
+  var reader = new FileReader();
+  reader.onerror = function(e){ dbg('loadImage FileReader ERROR', String(e)); toast('Could not read file.','err'); };
+  reader.onload = function(e){
+    var dataUrl = e.target.result;
+    dbg('loadImage FileReader onload', {resultLen: dataUrl ? dataUrl.length : 0});
+    if(!dataUrl){ dbg('loadImage FileReader result empty'); toast('File read empty.','err'); return; }
+    var img = new Image();
+    img.onerror = function(err){ dbg('loadImage IMG ERROR', String(err)); toast('Image failed to decode.','err'); };
+    img.onload = function(){
+      dbg('loadImage img.onload', {naturalW: img.naturalWidth, naturalH: img.naturalHeight});
+      if(!img.naturalWidth || !img.naturalHeight){
+        dbg('loadImage ERROR -- zero dimensions'); toast('Image has no dimensions.','err'); return;
+      }
+      pdfDoc=null; pgGrp(false);
+      var scale=Math.min(1, IOS_MAX_PX/Math.max(img.naturalWidth, img.naturalHeight));
+      var w=Math.round(img.naturalWidth*scale), h=Math.round(img.naturalHeight*scale);
+      dbg('loadImage resize', {scale: scale, w: w, h: h});
+      resize(w,h);
+      try{
+        bCtx.drawImage(img,0,0,w,h);
+        dbg('loadImage drawImage done');
+      } catch(ex){
+        dbg('loadImage drawImage ERROR', ex.message); toast('Canvas draw failed: '+ex.message,'err'); return;
+      }
+      afterLoad();
+      dbg('loadImage complete OK');
+    };
+    img.src = dataUrl;
+    dbg('loadImage img.src set');
   };
-  img.src=url;
-  dbg('loadImage img.src set');
+  reader.readAsDataURL(f);
+  dbg('loadImage FileReader started');
 }
 
 function loadPDF(f){
