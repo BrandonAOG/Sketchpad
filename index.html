@@ -1044,9 +1044,39 @@ function getPos(e){
 }
 function snapPt(x,y){ if(!snapEnabled||!gridEnabled) return {x:x,y:y}; var g=gridSize; return {x:Math.round(x/g)*g,y:Math.round(y/g)*g}; }
 
+// ── DEBUG OVERLAY ──
+(function(){
+  var dbg=document.createElement('div');
+  dbg.id='dbg';
+  dbg.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:9999;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:6px 8px;max-height:180px;overflow-y:auto;pointer-events:none;';
+  document.body.appendChild(dbg);
+  window._dbg=function(msg){
+    var line=document.createElement('div');
+    line.textContent=new Date().toISOString().slice(11,23)+' '+msg;
+    dbg.appendChild(line);
+    dbg.scrollTop=dbg.scrollHeight;
+    console.log('[DBG]',msg);
+  };
+  window.onerror=function(msg,src,ln,col,err){
+    window._dbg('ERROR: '+msg+' (line '+ln+')');
+  };
+})();
+window._dbg('Page loaded. UA='+navigator.userAgent.slice(0,60));
+
 // ── FILE LOADING ──
-// open-btn is a <label> — file picker opens natively, no JS needed
-fileIn.addEventListener('change',function(e){ var f=e.target.files[0]; if(f) loadFile(f); e.target.value=''; });
+fileIn.addEventListener('change',function(e){
+  window._dbg('change fired, files='+e.target.files.length);
+  var f=e.target.files[0];
+  if(f){
+    window._dbg('file: '+f.name+' | type='+f.type+' | size='+f.size);
+    loadFile(f);
+  } else {
+    window._dbg('change fired but no file');
+  }
+  e.target.value='';
+});
+fileIn.addEventListener('click', function(){ window._dbg('input clicked'); });
+fileIn.addEventListener('touchend', function(){ window._dbg('input touchend'); },{passive:true});
 viewport.addEventListener('dragover',function(e){ e.preventDefault(); viewport.style.outline='2px dashed #6c63ff'; });
 viewport.addEventListener('dragleave',function(){ viewport.style.outline=''; });
 viewport.addEventListener('drop',function(e){ e.preventDefault(); viewport.style.outline=''; var f=e.dataTransfer.files[0]; if(f) loadFile(f); });
