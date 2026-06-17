@@ -3501,6 +3501,15 @@ function _explodePDFPage(n){
     ]).then(function(parts){
       var opList = parts[0], tc = parts[1], annots = parts[2]||[];
       _pageAnnots = annots;   // stash for _explodeObjects
+      if(AOG_DEBUG){
+        try{
+          console.log('[AOG:annots] count='+annots.length);
+          annots.forEach(function(a,i){
+            console.log('[AOG:annots] #'+i, 'subtype='+(a.subtype||a.annotationType||'?'),
+              'hasContents='+(a.contents!=null), 'contents='+JSON.stringify((a.contents||a.content||'').slice(0,40)));
+          });
+        }catch(e){ console.warn('annot dbg',e); }
+      }
       _renderBackdropNoText(page, opList, vp, w, h).then(function(){
         _explodeObjects(page, opList, tc, vp, sc, w, h, n);
       }).catch(function(err){
@@ -3873,11 +3882,16 @@ function _explodeObjects(page, opList, tc, vp, sc, w, h, n){
   // right spot/rotation, carrying its text, color and font size where available.
   try{
     var U2=pdfjsLib.Util;
+    // pdf.js may expose the kind as a string `subtype` ('FreeText') OR a numeric
+    // `annotationType` (FreeText === 3 in AnnotationType). Accept both.
+    var FREETEXT_NUM = (pdfjsLib.AnnotationType && pdfjsLib.AnnotationType.FREETEXT) || 3;
     (_pageAnnots||[]).forEach(function(an){
-      var sub=(an.subtype||an.annotationType||'');
-      var isFreeText = (sub==='FreeText') || (an.fieldType==='FreeText');
+      var sub=an.subtype||'';
+      var isFreeText = (sub==='FreeText') ||
+                       (an.annotationType===FREETEXT_NUM) ||
+                       (an.fieldType==='FreeText');
       if(!isFreeText) return;
-      var txt=(an.contents!=null?an.contents:(an.content||''));
+      var txt=(an.contents!=null?an.contents:(an.contentsObj && an.contentsObj.str)||(an.content||''));
       if(txt==null) return;
       txt=String(txt).replace(/\r\n?/g,'\n').replace(/\u0000/g,'');
       if(!txt.trim()) return;
