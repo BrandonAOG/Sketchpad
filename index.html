@@ -3934,20 +3934,23 @@ function _explodeObjects(page, opList, tc, vp, sc, w, h, n){
           col='#'+[cc[0],cc[1],cc[2]].map(function(v){return ('0'+cv2(v).toString(16)).slice(-2);}).join('');
         }
       }catch(e){}
-      // Rotation: on a rotated page the visual text reads at the page's angle.
-      var pageRot=((vp.rotation||0)%360+360)%360;
-      var ang=0;
-      if(pageRot===90) ang=0;     // vp.transform already orients visual; keep upright
-      textObjs.push({
-        id: Date.now()+Math.floor(Math.random()*100000)+textObjs.length,
-        x: x0, y: y0 + fpx*0.85,   // baseline ~ top + ascent
-        text: txt, color: col, fontSize: fpx/sc,
+      // Create the app's COMMENT/NOTE object (sticky-note type) from this
+      // FreeText annotation — center on the box, carry text + the note's color.
+      var cw=Math.max(60, x1-x0), ch=Math.max(40, y1-y0);
+      var nc={
+        id: Date.now()+Math.floor(Math.random()*100000)+commentObjs.length,
+        cx:(x0+x1)/2, cy:(y0+y1)/2,
+        w:cw, h:ch,
+        text: txt, textColor: col,
+        bgColor:_cBgColor, bgOpacity:_cBgOpacity,
+        borderColor:_cBorderColor, borderStrokeW:_cBorderW,
+        fontSize: Math.max(8, Math.round(fpx/sc)),
+        fontFamily:'Arial', bold:false, italic:false, underline:false, strike:false,
         opacity:1, layerIdx:activeLayerIdx,
-        bold:false, italic:false, underline:false, strike:false,
-        fontFamily:'Arial', textAlign:'left', angle:ang, bgOpacity:0,
-        _fromFreeText:true   // came from a FreeText annotation (user note)
-      });
-      dbg('freetext','imported note',{text:txt.slice(0,30), x:Math.round(x0), y:Math.round(y0), fpx:Math.round(fpx), col:col});
+        _fromFreeText:true   // imported from a FreeText annotation
+      };
+      commentObjs.push(nc);
+      dbg('freetext','imported NOTE',{text:txt.slice(0,30), cx:Math.round(nc.cx), cy:Math.round(nc.cy), w:Math.round(cw), h:Math.round(ch), fs:nc.fontSize, col:col});
     });
   }catch(e){ console.warn('[Explode] FreeText pass:',e); }
 
